@@ -99,7 +99,7 @@ func LoadConfig() (*Config, error) {
 			Name:     getEnv("DB_NAME", "affpilot_auth"),
 		},
 		JWT: JWTConfig{
-			Secret: getEnv("JWT_SECRET", "your-secret-key-here"),
+			Secret: getEnv("JWT_SECRET", "jwtsecretkey"),
 			Expiry: jwtExpiry,
 		},
 		Admin: AdminConfig{

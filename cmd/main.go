@@ -1,23 +1,20 @@
 package main
 
 import (
-    "log"
-    "os"
+	"log"
+	"net/http"
 
-    "github.com/sagorsarker04/Developer-Assignment/internal/database"
-    "github.com/joho/godotenv"
+	"github.com/gorilla/mux"
+	"github.com/sagorsarker04/Developer-Assignment/internal/http/routes"
 )
 
 func main() {
-    // Load environment variables
-    err := godotenv.Load(".env")
-    if err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
-    }
+	router := mux.NewRouter()
 
-    // Connect to the database
-    database.Connect()
-    defer database.Close()
+	// Register auth routes
+	routes.RegisterAuthRoutes(router)
 
-    log.Println("App is running on port", os.Getenv("SERVER_PORT"))
+	// Start the server
+	log.Println("Server running on http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
