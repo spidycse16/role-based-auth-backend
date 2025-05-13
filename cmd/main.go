@@ -1,11 +1,23 @@
 package main
 
 import (
-	"fmt"
-	"log"
+    "log"
+    "os"
+
+    "github.com/sagorsarker04/Developer-Assignment/internal/database"
+    "github.com/joho/godotenv"
 )
 
 func main() {
-	fmt.Println("AffPilot Auth Service starting...")
-	log.Println("Server initialized")
+    // Load environment variables
+    err := godotenv.Load(".env")
+    if err != nil {
+        log.Fatalf("Error loading .env file: %v", err)
+    }
+
+    // Connect to the database
+    database.Connect()
+    defer database.Close()
+
+    log.Println("App is running on port", os.Getenv("SERVER_PORT"))
 }

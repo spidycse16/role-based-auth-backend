@@ -1,4 +1,4 @@
-module github.com/your-username/affpilot-auth-service
+module github.com/sagorsarker04/Developer-Assignment
 
 go 1.20
 
