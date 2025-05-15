@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"context"
+	// "fmt"
 	"net/http"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 )
@@ -44,6 +46,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, UsernameKey, username)
 			ctx = context.WithValue(ctx, UserTypeKey, userType)
+			//fmt.Println(ctx)
 
 			// Pass the request to the next handler
 			next.ServeHTTP(w, r.WithContext(ctx))

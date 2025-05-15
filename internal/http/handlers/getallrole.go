@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-
+	"fmt"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
 )
@@ -11,7 +11,8 @@ import (
 func GetAllRole(w http.ResponseWriter, r *http.Request) {
 	// Extract user info from the context
 	userType := middleware.GetUserType(r)
-
+	fmt.Println(r)
+	fmt.Println("User Type:", userType)
 	// Allow only Admin and SystemAdmin
 	if userType != "Admin" && userType != "SystemAdmin" {
 		http.Error(w, "No permission to access this resource", http.StatusForbidden)

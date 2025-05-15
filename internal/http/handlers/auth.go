@@ -133,7 +133,41 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Assign default "User" role
+	defaultRoleID := "ab8b68b2-02d5-4918-b34c-f6c600c6c64f"
+	systemAdminID := "abd8460f-ca2b-4960-914e-80776f4c8116"
+
+	// Check if the role is already assigned to avoid duplicate entries
+	var roleExists bool
+	roleCheckQuery := `
+		SELECT EXISTS(
+			SELECT 1 FROM user_roles 
+			WHERE user_id = $1 AND role_id = $2
+		)
+	`
+	err = db.QueryRow(roleCheckQuery, userID, defaultRoleID).Scan(&roleExists)
+	if err != nil {
+		http.Error(w, "Failed to check user role", http.StatusInternalServerError)
+		log.Println("Failed to check user role for user:", userID, "Error:", err)
+		return
+	}
+
+	// If role not assigned, assign it
+	if !roleExists {
+		_, err = db.Exec(`
+			INSERT INTO user_roles (user_id, role_id, assigned_by, created_at)
+			VALUES ($1, $2, $3, NOW())
+		`, userID, defaultRoleID, systemAdminID)
+
+		if err != nil {
+			http.Error(w, "Failed to assign default role", http.StatusInternalServerError)
+			log.Println("Failed to assign default role for user:", userID, "Error:", err)
+			return
+		}
+	}
+
 	w.Write([]byte("Email verified successfully"))
+	log.Println("Email verified and role assigned successfully for user:", userID)
 }
 
 // func printToken(){
