@@ -11,6 +11,17 @@ import (
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 )
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// LoginResponse represents the JSON response for a successful login.
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	// Parse the JSON request body
 	var req LoginRequest

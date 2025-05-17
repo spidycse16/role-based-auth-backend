@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/smtp"
-	"regexp"
+	
 	"strings"
 	"time"
 	"github.com/golang-jwt/jwt/v5"
@@ -15,26 +15,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// RegisterRequest represents the expected JSON payload for user registration.
-type RegisterRequest struct {
-	Username  string `json:"username"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-// LoginResponse represents the JSON response for a successful login.
-type LoginResponse struct {
-	Token string `json:"token"`
-}
-
-// RegisterUser handles user registration.
 
 // sendVerificationEmail sends a verification email to the user.
 func sendVerificationEmail(email, token string) error {
@@ -63,20 +43,6 @@ func sendVerificationEmail(email, token string) error {
 	return nil
 }
 
-// isEmailExists checks if an email is already registered.
-func isEmailExists(db *sql.DB, email string) (bool, error) {
-	var exists bool
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
-	err := db.QueryRow(query, email).Scan(&exists)
-	return exists, err
-}
-
-// isValidEmail validates the email format.
-func isValidEmail(email string) bool {
-	// Basic email regex, adjust if needed
-	re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return re.MatchString(email)
-}
 
 // generateJWT generates a JWT token for the authenticated user.
 func generateJWT(userID, username, userType, secret string, expiry time.Duration) (string, error) {

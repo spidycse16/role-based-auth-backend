@@ -14,11 +14,6 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 	userType := middleware.GetUserType(r)
 	fmt.Println(r)
 	fmt.Println("User Type:", userType)
-	// Allow only Admin and SystemAdmin
-	if userType != "Admin" && userType != "SystemAdmin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
-		return
-	}
 
 
 	// Connect to the database

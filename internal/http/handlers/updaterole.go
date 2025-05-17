@@ -7,13 +7,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/models"
 )
 
-// RoleUpdateRequest represents the expected request body for updating a role
-type RoleUpdateRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
+
 
 // UpdateRole updates the details of a specific role
 func UpdateRole(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +28,7 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) {
 	roleID := vars["role_id"]
 
 	// Parse the request body
-	var req RoleUpdateRequest
+	var req models.RoleUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return

@@ -8,15 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/models"
 )
 
-// PermissionRequest represents the JSON payload for creating a permission
-type PermissionRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Resource    string `json:"resource"`
-	Action      string `json:"action"`
-}
+
 
 // CreatePermission handles creating a new permission
 func CreatePermission(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +25,7 @@ func CreatePermission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the request body
-	var req PermissionRequest
+	var req models.PermissionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
