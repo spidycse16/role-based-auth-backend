@@ -72,7 +72,7 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 
 	userType:=middleware.GetUserType(r)
 
-	if userType!="Admin" && userType!="SystemAdmin"{
+	if userType!="admin" && userType!="system_admin"{
 		http.Error(w,"You cannot access this page",http.StatusBadGateway)
 		return
 	}

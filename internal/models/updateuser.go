@@ -1,8 +1,7 @@
-// models/user.go
 package models
 
-// UpdateUserRequest represents the request payload for updating a user
 type UpdateUserRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Username  string `json:"username,omitempty"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
 }

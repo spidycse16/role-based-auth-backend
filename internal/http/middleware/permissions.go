@@ -65,18 +65,18 @@ func RequireAnyPermission(required []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := GetUserID(r)
 		if userID == "" {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "No Valid user", http.StatusForbidden)
 			return
 		}
 
 		availablePermissions, err := FetchAllUserPermissions(userID)
 		if err != nil || len(availablePermissions) == 0 {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "No valiable permissions", http.StatusForbidden)
 			return
 		}
 
 		if !CheckPermission(required, availablePermissions) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "No matching Permissions", http.StatusForbidden)
 			return
 		}
 

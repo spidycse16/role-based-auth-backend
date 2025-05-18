@@ -15,7 +15,7 @@ func ListAllPermissions(w http.ResponseWriter, r *http.Request) {
 	userType := middleware.GetUserType(r)
 
 	// Allow only Admin and SystemAdmin
-	if userType != "Admin" && userType != "SystemAdmin" {
+	if userType != "admin" && userType != "system_admin" {
 		http.Error(w, "No permission to access this resource", http.StatusForbidden)
 		return
 	}

@@ -47,8 +47,10 @@ type AdminConfig struct {
 }
 
 // EmailConfig holds email configuration
+// EmailConfig holds email configuration
 type EmailConfig struct {
 	VerificationURL  string
+	PasswordResetURL string
 	From             string
 	Host             string
 	Port             int
@@ -57,6 +59,7 @@ type EmailConfig struct {
 	Secure           bool
 	VerificationTTL  int
 }
+
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
@@ -86,6 +89,8 @@ func LoadConfig() (*Config, error) {
 	// Parse server port
 	serverPort, _ := strconv.Atoi(getEnv("SERVER_PORT", "8080"))
 
+	
+
 	return &Config{
 		App: AppConfig{
 			Environment: getEnv("APP_ENV", "development"),
@@ -104,18 +109,20 @@ func LoadConfig() (*Config, error) {
 		},
 		Admin: AdminConfig{
 			Username: getEnv("SYSTEM_ADMIN_USERNAME", "admin"),
-			Password: getEnv("SYSTEM_ADMIN_PASSWORD", "adminpassword"),
+			Password: getEnv("SYSTEM_ADMIN_PASSWORD", "admin"),
 			Email:    getEnv("SYSTEM_ADMIN_EMAIL", "admin@example.com"),
 		},
 		Email: EmailConfig{
 			VerificationURL: getEnv("EMAIL_VERIFICATION_URL", "http://localhost:8080/api/v1/auth/verify"),
-			From:            getEnv("EMAIL_FROM", "no-reply@example.com"),
-			Host:            getEnv("EMAIL_HOST", "smtp.example.com"),
+			From:            getEnv("EMAIL_FROM", "sagor.sarker0709@gmail.com"),
+			Host:            getEnv("EMAIL_HOST", "smtp.gmail.com"),
 			Port:            emailPort,
-			Username:        getEnv("EMAIL_USERNAME", ""),
+			Username:        getEnv("EMAIL_USERNAME", "smtp"),
 			Password:        getEnv("EMAIL_PASSWORD", ""),
 			Secure:          emailSecure,
 			VerificationTTL: verificationTTL,
+			PasswordResetURL: getEnv("EMAIL_PASSWORD_RESET_URL", "http://localhost:8080/api/v1/auth/reset-password"),
+
 		},
 		Server: ServerConfig{
 			Port: serverPort,

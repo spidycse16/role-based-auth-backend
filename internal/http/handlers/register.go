@@ -1,17 +1,17 @@
 package handlers
 
-
 import (
-	"encoding/json"
 	"database/sql"
+	"encoding/json"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
-	"golang.org/x/crypto/bcrypt"
+
+	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/models"
-	"github.com/google/uuid"
-	"regexp"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterRequest struct {
@@ -33,7 +33,6 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Email foramt", http.StatusBadRequest)
 		return
 	}
-	
 
 	// Trim spaces
 	req.Username = strings.TrimSpace(req.Username)
@@ -67,10 +66,11 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Email:             req.Email,
 		PasswordHash:      string(hashedPassword),
 		EmailVerified:     false,
-		UserType:          "User",
+		UserType:          "user", // Capitalized to match your hierarchy
 		Active:            true,
 		VerificationToken: verificationToken,
-		TokenExpiry:       &tokenExpiry, // Use the address here
+		ResetToken:        "",
+		TokenExpiry:       &tokenExpiry,
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 	}
@@ -84,7 +84,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	defer database.Close(db)
 
 	// Check if the email already exists
-	if exists,err := isEmailExists(db, user.Email); err != nil {
+	if exists, err := isEmailExists(db, user.Email); err != nil {
 		http.Error(w, "Failed to check email existence", http.StatusInternalServerError)
 		return
 	} else if exists {

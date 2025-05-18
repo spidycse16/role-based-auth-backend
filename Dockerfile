@@ -11,5 +11,9 @@ COPY .env .env
 # Expose port 8080
 EXPOSE 8080
 
-# CMD with a simple placeholder Go application (this can be replaced with actual code later)
-CMD ["go", "run", "cmd/main.go"]
+#uncommnet this line and comment CMD["go", "run" , "cmd/migration/main.go"] for running migration for first time
+# CMD ["go", "run", "cmd/migration/main.go"]
+
+#after the migration is done always run this line
+
+CMD ["go","run","cmd/main.go"]

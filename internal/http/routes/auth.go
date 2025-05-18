@@ -18,8 +18,9 @@ func RegisterRoutes(router *mux.Router) {
 	auth.HandleFunc("/logout", handlers.LogoutUser).Methods(http.MethodPost)
 	auth.HandleFunc("/register", handlers.RegisterUser).Methods(http.MethodPost)
 	auth.HandleFunc("/verify/{token}", handlers.VerifyEmail).Methods(http.MethodGet)
-	// auth.HandleFunc("/resend-verification", handlers.ResendVerificationEmail).Methods(http.MethodPost)
-	// auth.HandleFunc("/password-reset", handlers.ResetPassword).Methods(http.MethodPost)
+	auth.HandleFunc("/resend-verification", handlers.ResendVerificationEmail).Methods(http.MethodPost)
+	auth.HandleFunc("/password-reset-request", handlers.PasswordResetRequest).Methods(http.MethodPost)
+	auth.HandleFunc("/password-reset-confirm", handlers.PasswordResetConfirm).Methods(http.MethodPost)
 
 	// User Routes
 	users := api.PathPrefix("/users").Subrouter()
@@ -29,14 +30,21 @@ func RegisterRoutes(router *mux.Router) {
 
 	users.Handle("/{user_id}", middleware.RequireAnyPermission([]string{"user:read:self"}, http.HandlerFunc(handlers.GetUserDetails))).Methods(http.MethodGet)
 
-	// users.HandleFunc("/{user_id}", handlers.UpdateUser).Methods(http.MethodPut) // User(self only)/Admin+
-	//kaj korena. kaj kora lagbe eta niye
-	users.Handle("/{user_id}", middleware.RequireAnyPermission([]string{"user:update:self"}, http.HandlerFunc(handlers.UpdateUser))).Methods(http.MethodPut)
-	// users.HandleFunc("/{user_id}/request-deletion", handlers.RequestAccountDeletion).Methods(http.MethodPost) // User(self only)
-	// users.HandleFunc("/{user_id}", handlers.DeleteUser).Methods(http.MethodDelete) // Moderator+
-	// users.HandleFunc("/{user_id}/role", handlers.ChangeUserRole).Methods(http.MethodPost) // Admin+
-	// users.HandleFunc("/{user_id}/promote/admin", handlers.PromoteToAdmin).Methods(http.MethodPost) // System Admin
-	// users.HandleFunc("/{user_id}/promote/moderator", handlers.PromoteToModerator).Methods(http.MethodPost) // Admin+
+	//ekhon kaj kore
+	users.Handle("/{user_id}", middleware.RequireAnyPermission([]string{"user:update:self","user:update:all"}, http.HandlerFunc(handlers.UpdateUser))).Methods(http.MethodPut)
+
+	users.Handle("/{user_id}",middleware.RequireAnyPermission([]string {"user:delete:self"},http.HandlerFunc(handlers.DeleteRequest))).Methods(http.MethodPost)
+
+	users.Handle("/{user_id}", middleware.RequireAnyPermission([]string{"user:delete:all"}, http.HandlerFunc(handlers.DeleteUser))).Methods(http.MethodDelete)
+
+	users.HandleFunc("/{user_id}/role", handlers.ChangeUserRole).Methods(http.MethodPost) // Admin+
+
+	users.Handle("/{user_id}/promote/admin", middleware.RequireAnyPermission([]string{"user:promote:admin"}, http.HandlerFunc(handlers.PromoteToAdmin))).Methods(http.MethodPost)
+
+	users.Handle("/{user_id}/promote/moderator", middleware.RequireAnyPermission([]string{"user:promote:moderator"}, http.HandlerFunc(handlers.PromoteToModerator))).Methods(http.MethodPost)
+	
+	users.Handle("/{user_id}/demote", middleware.RequireAnyPermission([]string{"user:demote"}, http.HandlerFunc(handlers.DemoteUserRole))).Methods(http.MethodPost)
+
 	// users.HandleFunc("/{user_id}/demote", handlers.DemoteUserRole).Methods(http.MethodPost) // Admin+
 
 	// Role Routes

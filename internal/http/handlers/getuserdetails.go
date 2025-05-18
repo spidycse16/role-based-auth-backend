@@ -18,17 +18,17 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Extracted User Type:", userType)
 	fmt.Println("Extracted User ID:", userID)     
 
-	// Allow only authenticated users
-	// if userType == "" || userID == "" {
-	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	// 	return
-	// }
+	//Allow only authenticated users
+	if userType == "" || userID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	// Get the requested user ID from the URL
 	requestedUserID := mux.Vars(r)["user_id"]
 
 	//Allow only the user themselves or Admin/SystemAdmin
-	if requestedUserID != userID && userType != "Admin" && userType != "SystemAdmin" {
+	if requestedUserID != userID && userType != "admin" && userType != "system_admin" {
 		http.Error(w, "No permission to access this resource", http.StatusForbidden)
 		return
 	}

@@ -1,6 +1,5 @@
 package handlers
 
-
 import (
 	"database/sql"
 	"encoding/json"
@@ -57,13 +56,20 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch user from the database
 	var storedHash, userID, username, userType string
-	query := "SELECT id, username, user_type, password_hash FROM users WHERE email = $1"
-	err = db.QueryRow(query, req.Email).Scan(&userID, &username, &userType, &storedHash)
+	var emailVerified bool
+	query := "SELECT id, username, user_type, password_hash, email_verified FROM users WHERE email = $1"
+	err = db.QueryRow(query, req.Email).Scan(&userID, &username, &userType, &storedHash, &emailVerified)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	} else if err != nil {
 		http.Error(w, "Failed to fetch user", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the email is verified
+	if !emailVerified {
+		http.Error(w, "Email not verified", http.StatusForbidden)
 		return
 	}
 
@@ -84,7 +90,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		Name:     "auth_token",
 		Value:    token,
 		HttpOnly: true,
-		Expires: expiresAt,
+		Expires:  expiresAt,
 		Secure:   false, // Set to true in production with HTTPS
 		Path:     "/",
 	}

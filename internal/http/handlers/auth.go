@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/smtp"
-	
+
+	"log"
 	"strings"
 	"time"
+
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
-	"log"
-	"github.com/gorilla/mux"
 )
-
 
 // sendVerificationEmail sends a verification email to the user.
 func sendVerificationEmail(email, token string) error {
@@ -42,7 +42,6 @@ func sendVerificationEmail(email, token string) error {
 
 	return nil
 }
-
 
 // generateJWT generates a JWT token for the authenticated user.
 func generateJWT(userID, username, userType, secret string, expiry time.Duration) (string, error) {
@@ -100,8 +99,8 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Assign default "User" role
-	defaultRoleID := "ab8b68b2-02d5-4918-b34c-f6c600c6c64f"
-	systemAdminID := "abd8460f-ca2b-4960-914e-80776f4c8116"
+	defaultRoleID := "7f6fa0ea-b43d-4443-8be5-d2ce1ff663e9"
+	systemAdminID := "66557562-d184-49ad-83ac-9dc3841ed365"
 
 	// Check if the role is already assigned to avoid duplicate entries
 	var roleExists bool

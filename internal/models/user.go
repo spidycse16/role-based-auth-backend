@@ -13,7 +13,8 @@ type User struct {
 	UserType          string     `json:"user_type"`
 	Active            bool       `json:"active"`
 	VerificationToken string     `json:"-"`
+	ResetToken        string     `json:"-"`
 	TokenExpiry       *time.Time `json:"-"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
-}
+}/*  */

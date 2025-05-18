@@ -1,23 +1,24 @@
 package main
 
 import (
-	"log"
-	"os"
+	"fmt"
 
+
+	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 )
 
+
 func main() {
-	// Set the default migrations folder
-	migrationsPath := "./migrations"
-	if len(os.Args) > 1 {
-		migrationsPath = os.Args[1]
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		 fmt.Println("Failed to load config")
+		 return
 	}
+	// connect to database
+	database.Connect()
 
-	// Run migrations
-	if err := database.Migrate(migrationsPath); err != nil {
-		log.Fatalf("Migration failed: %v", err)
-	}
-
-	log.Println("Migration completed successfully.")
+	// add system admin if does not exist
+	database.InitAdminUser(cfg.Admin)
 }
