@@ -12,7 +12,7 @@ func main() {
 	router := mux.NewRouter()
 
 	// Register auth routes
-	routes.RegisterRoutes(router)
+	routes.SetupRoutes(router)
 
 	// Start the server
 	log.Println("Server running on http://localhost:8080")
