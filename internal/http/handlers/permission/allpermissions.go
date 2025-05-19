@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
@@ -18,7 +19,7 @@ func GetCurrentUserPermissions(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	fmt.Fprintln(w,userID)
+	fmt.Fprintln(w, userID)
 	// Connect to the database
 	db, err := database.Connect()
 	if err != nil {
@@ -63,5 +64,14 @@ func GetCurrentUserPermissions(w http.ResponseWriter, r *http.Request) {
 
 	// Return the permissions as JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(permissions)
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Permissions fetched successfully",
+		"data":    permissions,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"log"
 
@@ -53,6 +54,17 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Verification email sent successfully"))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Verification email sent successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 	log.Println("Verification email resent successfully to:", reqBody.Email)
+
 }

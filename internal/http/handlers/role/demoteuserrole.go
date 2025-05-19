@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -99,11 +100,20 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 	// Perform the update in DB
 	_, err = db.Exec("UPDATE users SET user_type = $1 WHERE id = $2", targetRole, userID)
 	if err != nil {
-		http.Error(w, "Cannot update user",http.StatusBadRequest)
+		http.Error(w, "Cannot update user", http.StatusBadRequest)
 		return
 	}
 
 	// Return a success response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User demoted successfully to " + targetRole))
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "User demoted successfully to " + targetRole,
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

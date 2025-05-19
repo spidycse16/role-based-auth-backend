@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -70,6 +72,15 @@ func PromoteToAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User successfully promoted to Admin"))
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "User successfully promoted to Admin",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -16,7 +17,7 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	userType := middleware.GetUserType(r)
 	userID := middleware.GetUserID(r)
 	fmt.Println("Extracted User Type:", userType)
-	fmt.Println("Extracted User ID:", userID)     
+	fmt.Println("Extracted User ID:", userID)
 
 	//Allow only authenticated users
 	if userType == "" || userID == "" {
@@ -75,7 +76,15 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 		"updated_at":     updatedAt,
 	}
 
-	// Return the user details as JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "User details retrieved successfully",
+		"data":    user,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,8 +11,6 @@ import (
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
 	"github.com/sagorsarker04/Developer-Assignment/internal/models"
 )
-
-
 
 // CreatePermission handles creating a new permission
 func CreatePermission(w http.ResponseWriter, r *http.Request) {
@@ -63,8 +62,16 @@ func CreatePermission(w http.ResponseWriter, r *http.Request) {
 
 	// Return the created permission ID
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"message":        "Permission created successfully",
-		"permission_id":  permissionID,
-	})
+	w.WriteHeader(http.StatusCreated) // 201 Created
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusCreated),
+		"message": "Permission created successfully",
+		"data": map[string]string{
+			"permission_id": permissionID,
+		},
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

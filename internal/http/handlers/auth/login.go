@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
-	"golang.org/x/crypto/bcrypt"
+
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginRequest struct {
@@ -96,9 +98,18 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// Set cookie in response
 	http.SetCookie(w, cookie)
-	w.Write([]byte("Login successful! Cookie set."))
 
-	// Return the token
+	// Set header and status code
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(LoginResponse{Token: token})
+	w.WriteHeader(http.StatusAccepted)
+
+	// Prepare your JSON response manually
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusAccepted),
+		"message": "Login successful! Cookie set.",
+		"data":    map[string]string{"token": token},
+	}
+
+	// Encode response to JSON and write it to response body
+	json.NewEncoder(w).Encode(response)
 }

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -38,6 +40,15 @@ func DeleteRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return a success response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Your account deletion request has been submitted successfully"))
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Your account deletion request has been submitted successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

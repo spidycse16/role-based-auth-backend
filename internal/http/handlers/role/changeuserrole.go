@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -84,7 +85,15 @@ func ChangeUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return a success response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User role updated successfully"))
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "User role updated successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

@@ -70,44 +70,46 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Content-Type", "application/json")
 	// json.NewEncoder(w).Encode(response)
 
-	userType:=middleware.GetUserType(r)
+	userType := middleware.GetUserType(r)
 
-	if userType!="admin" && userType!="system_admin"{
-		http.Error(w,"You cannot access this page",http.StatusBadGateway)
+	if userType != "admin" && userType != "system_admin" {
+		http.Error(w, "You cannot access this page", http.StatusBadGateway)
 		return
 	}
 	var req models.CreateRoleRequest
-	err:=json.NewDecoder(r.Body).Decode(&req)
-	if(err!=nil){
-		http.Error(w,"Please input Role name and description correctly",http.StatusBadRequest)
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Please input Role name and description correctly", http.StatusBadRequest)
 		return
 	}
 
-	if(req.Name=="" || req.Description==""){
-		http.Error(w,"Input fileds are empty",http.StatusBadRequest)
+	if req.Name == "" || req.Description == "" {
+		http.Error(w, "Input fileds are empty", http.StatusBadRequest)
 		return
-	} 
+	}
 
-	db,err:=database.Connect()
-	if(err!=nil){
-		http.Error(w,"Failed to connect database vai",http.StatusBadRequest)
+	db, err := database.Connect()
+	if err != nil {
+		http.Error(w, "Failed to connect database vai", http.StatusBadRequest)
 		return
 	}
 
 	defer database.Close(db)
 
-	id:=uuid.New()
-	query:=`Insert into roles (id,name,description,created_at,updated_at) values($1,$2,$3,$4,$5)`
-	_,err=db.Exec(query,id,req.Name,req.Description,time.Now(),time.Now())
-	if err!=nil{
-		http.Error(w,"Failed to execute the query vai",http.StatusBadRequest)
+	id := uuid.New()
+	query := `Insert into roles (id,name,description,created_at,updated_at) values($1,$2,$3,$4,$5)`
+	_, err = db.Exec(query, id, req.Name, req.Description, time.Now(), time.Now())
+	if err != nil {
+		http.Error(w, "Failed to execute the query vai", http.StatusBadRequest)
+		return
 	}
-	response:=map [string]interface{}{
-		"id":id.String(),
-		"name":req.Name,
-		"description":req.Description,
+	response := map[string]interface{}{
+		"id":          id.String(),
+		"name":        req.Name,
+		"description": req.Description,
 	}
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // Set proper status code
 	json.NewEncoder(w).Encode(response)
 
 }

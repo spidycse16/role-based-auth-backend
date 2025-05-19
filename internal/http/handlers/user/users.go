@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
@@ -14,7 +15,6 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 	userType := middleware.GetUserType(r)
 	fmt.Println(r)
 	fmt.Println("User Type:", userType)
-
 
 	// Connect to the database
 	db, err := database.Connect()
@@ -63,5 +63,14 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	// Return the users as JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Users retrieved successfully",
+		"data":    users,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

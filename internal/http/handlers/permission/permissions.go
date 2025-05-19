@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
-	"github.com/gorilla/mux"
-	"database/sql"
 )
 
 // ListAllPermissions lists all the permissions (Admin+)
@@ -59,9 +61,17 @@ func ListAllPermissions(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Return the permissions as JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(permissions)
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Permissions retrieved successfully",
+		"data":    permissions,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }
 
 func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +79,7 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 	userType := middleware.GetUserType(r)
 
 	// Allow only Admin and SystemAdmin
-	if userType != "Admin" && userType != "SystemAdmin" {
+	if userType != "admin" && userType != "system_admin" {
 		http.Error(w, "No permission to access this resource", http.StatusForbidden)
 		return
 	}
@@ -113,7 +123,15 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 		"updated_at":  updatedAt,
 	}
 
-	// Return the permission details as JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(permission)
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Permission details retrieved successfully",
+		"data":    permission,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

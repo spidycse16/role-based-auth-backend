@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -47,5 +49,14 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 
 	// Return a success message
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"message": "Role deleted successfully"}`))
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Role deleted successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

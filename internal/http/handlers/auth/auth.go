@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/smtp"
+	"strconv"
 
 	"log"
 	"strings"
@@ -130,9 +132,19 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // 200 OK
 
-	w.Write([]byte("Email verified successfully"))
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Email verified successfully",
+		"data":    nil, // no extra data to send
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 	log.Println("Email verified and role assigned successfully for user:", userID)
+
 }
 
 // func printToken(){

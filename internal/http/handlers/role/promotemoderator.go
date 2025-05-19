@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -49,6 +51,15 @@ func PromoteToModerator(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return a success response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User promoted to Moderator successfully"))
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "User promoted to Moderator successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

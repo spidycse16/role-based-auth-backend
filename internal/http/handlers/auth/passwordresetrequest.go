@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/smtp"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
@@ -55,9 +56,6 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-
-
 	// Send the password reset email
 	if err := sendResetToken(reqBody.Email, resetToken); err != nil {
 		http.Error(w, "Failed to send password reset email", http.StatusInternalServerError)
@@ -65,8 +63,19 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Password reset email sent successfully"))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Password reset email sent successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 	log.Println("Password reset email sent successfully to:", reqBody.Email)
+
 }
 
 // sendResetToken sends a password reset email to the specified email address.

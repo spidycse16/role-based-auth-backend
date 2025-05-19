@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"net/http"
 	"log"
-	"golang.org/x/crypto/bcrypt"
+	"net/http"
+	"strconv"
+
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func PasswordResetConfirm(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +70,17 @@ func PasswordResetConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Password reset successfully"))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Password reset successfully",
+		"data":    nil,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 	log.Println("Password reset successfully for:", reqBody.Email)
+
 }
