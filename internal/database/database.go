@@ -12,19 +12,16 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 
-	_ "github.com/lib/pq" // PostgreSQL driver
+	_ "github.com/lib/pq"
 )
 
 var DB *sql.DB
 
 // Connect establishes a connection to the PostgreSQL database using configuration.
 func Connect() (*sql.DB, error) {
-	// Load configuration
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
-
+	// Load configuration singletone varible
+	cfg := config.GetConfig()
+	fmt.Printf("Address of cfg 2: %p\n", cfg)
 	// Build connection string
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
@@ -36,7 +33,7 @@ func Connect() (*sql.DB, error) {
 	)
 
 	// Open database connection
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open(cfg.Database.Host, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

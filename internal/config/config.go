@@ -1,8 +1,11 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -60,11 +63,15 @@ type EmailConfig struct {
 	VerificationTTL  int
 }
 
-
 // ServerConfig holds server configuration
 type ServerConfig struct {
 	Port int
 }
+
+var (
+	cfg  *Config
+	once sync.Once
+)
 
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
@@ -73,23 +80,25 @@ func LoadConfig() (*Config, error) {
 
 	// Parse DB port
 	dbPort, _ := strconv.Atoi(getEnv("DB_PORT", "5432"))
-	
+
 	// Parse JWT expiry
 	jwtExpiry, _ := time.ParseDuration(getEnv("JWT_EXPIRY", "24h"))
-	
+
 	// Parse email port
 	emailPort, _ := strconv.Atoi(getEnv("EMAIL_PORT", "587"))
-	
+
 	// Parse email secure
 	emailSecure, _ := strconv.ParseBool(getEnv("EMAIL_SECURE", "true"))
-	
+
 	// Parse verification token TTL
 	verificationTTL, _ := strconv.Atoi(getEnv("VERIFICATION_TOKEN_TTL", "5"))
-	
+
 	// Parse server port
 	serverPort, _ := strconv.Atoi(getEnv("SERVER_PORT", "8080"))
 
-	
+	baseURL := getEnv("BASE_URL", "http://localhost")
+	port := getEnv("SERVER_PORT", "8080")
+	url := fmt.Sprintf("%s:%s", baseURL, port)
 
 	return &Config{
 		App: AppConfig{
@@ -113,16 +122,15 @@ func LoadConfig() (*Config, error) {
 			Email:    getEnv("SYSTEM_ADMIN_EMAIL", "admin@example.com"),
 		},
 		Email: EmailConfig{
-			VerificationURL: getEnv("EMAIL_VERIFICATION_URL", "http://localhost:8080/api/v1/auth/verify"),
-			From:            getEnv("EMAIL_FROM", "sagor.sarker0709@gmail.com"),
-			Host:            getEnv("EMAIL_HOST", "smtp.gmail.com"),
-			Port:            emailPort,
-			Username:        getEnv("EMAIL_USERNAME", "smtp"),
-			Password:        getEnv("EMAIL_PASSWORD", ""),
-			Secure:          emailSecure,
-			VerificationTTL: verificationTTL,
-			PasswordResetURL: getEnv("EMAIL_PASSWORD_RESET_URL", "http://localhost:8080/api/v1/auth/reset-password"),
-
+			VerificationURL:  url + "/api/v1/auth/verify",
+			PasswordResetURL: url + "/api/v1/auth/reset-password",
+			From:             getEnv("EMAIL_FROM", "sagor.sarker0709@gmail.com"),
+			Host:             getEnv("EMAIL_HOST", "smtp.gmail.com"),
+			Port:             emailPort,
+			Username:         getEnv("EMAIL_USERNAME", "smtp"),
+			Password:         getEnv("EMAIL_PASSWORD", ""),
+			Secure:           emailSecure,
+			VerificationTTL:  verificationTTL,
 		},
 		Server: ServerConfig{
 			Port: serverPort,
@@ -137,4 +145,16 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func GetConfig() *Config {
+	once.Do(func() {
+		var err error
+		cfg, err = LoadConfig()
+		log.Print(cfg)
+		if err != nil {
+			log.Fatalf("failed to load config: %v", err)
+		}
+	})
+	return cfg
 }

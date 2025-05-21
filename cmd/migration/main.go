@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"log"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
@@ -11,11 +10,8 @@ import (
 
 func main() {
 	// Load configuration
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		 fmt.Println("Failed to load config")
-		 return
-	}
+	cfg := config.GetConfig()
+	log.Print("Chill",cfg)
 	// connect to database
 	database.Connect()
 

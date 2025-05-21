@@ -22,21 +22,19 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Protect System Admin from being demoted
+	// Only system_admin and admin can demote
 	userType := middleware.GetUserType(r)
 	if userType != "system_admin" && userType != "admin" {
 		http.Error(w, "Only System Admin and Admin can demote users", http.StatusForbidden)
 		return
 	}
 
-	// Parse the optional role name from the request body
 	var req DemoteRoleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err.Error() != "EOF" {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Connect to the database
 	db, err := database.Connect()
 	if err != nil {
 		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
@@ -44,7 +42,6 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 	defer database.Close(db)
 
-	// Get the current role of the target user
 	var currentRole string
 	err = db.QueryRow("SELECT user_type FROM users WHERE id = $1", userID).Scan(&currentRole)
 	if err == sql.ErrNoRows {
@@ -55,21 +52,17 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the target role index
-	targetRole := "user" // Default to demoting to User if no role is provided
+	targetRole := "user"
 	if req.RoleName != "" {
 		targetRole = req.RoleName
 	}
 
-	// Validate demotion logic with if-else
 	if currentRole == "system_admin" {
-		// Already handled earlier, but just for clarity
 		http.Error(w, "System Admin cannot be demoted", http.StatusForbidden)
 		return
 	}
 
 	if currentRole == "admin" {
-		// Admin can only be demoted to moderator or user
 		if targetRole != "moderator" && targetRole != "user" {
 			http.Error(w, "Admin can only be demoted to moderator or user", http.StatusBadRequest)
 			return
@@ -77,8 +70,6 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if currentRole == "moderator" {
-		// Moderator cannot demote or be demoted to higher roles, but this is demote API so:
-		// Demoting moderator only allowed to user
 		if targetRole != "user" {
 			http.Error(w, "Moderator can only be demoted to user", http.StatusBadRequest)
 			return
@@ -86,34 +77,44 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if currentRole == "user" {
-		// User cannot be demoted to anything else
 		http.Error(w, "User cannot be demoted to any role", http.StatusBadRequest)
 		return
 	}
 
-	// If targetRole is the same as currentRole, reject
 	if targetRole == currentRole {
 		http.Error(w, "Target role must be different from current role", http.StatusBadRequest)
 		return
 	}
 
-	// Perform the update in DB
+	// Update users table
 	_, err = db.Exec("UPDATE users SET user_type = $1 WHERE id = $2", targetRole, userID)
 	if err != nil {
 		http.Error(w, "Cannot update user", http.StatusBadRequest)
 		return
 	}
 
-	// Return a success response
+	// Get role ID of the target role
+	var newRoleID string
+	err = db.QueryRow("SELECT id FROM roles WHERE name = $1", targetRole).Scan(&newRoleID)
+	if err != nil {
+		http.Error(w, "Failed to fetch target role ID", http.StatusInternalServerError)
+		return
+	}
+
+	// Update user_roles table
+	_, err = db.Exec("UPDATE user_roles SET role_id = $1 WHERE user_id = $2", newRoleID, userID)
+	if err != nil {
+		http.Error(w, "Failed to update user role", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
 	response := map[string]interface{}{
 		"status":  strconv.Itoa(http.StatusOK),
 		"message": "User demoted successfully to " + targetRole,
 		"data":    nil,
 	}
-
 	json.NewEncoder(w).Encode(response)
-
 }

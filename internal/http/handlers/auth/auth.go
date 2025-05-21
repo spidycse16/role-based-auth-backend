@@ -20,10 +20,8 @@ import (
 
 // sendVerificationEmail sends a verification email to the user.
 func sendVerificationEmail(email, token string) error {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
+	cfg:=config.GetConfig()
+	
 
 	verificationURL := fmt.Sprintf("%s/%s", cfg.Email.VerificationURL, token)
 
@@ -31,7 +29,7 @@ func sendVerificationEmail(email, token string) error {
 	auth := smtp.PlainAuth("", cfg.Email.Username, cfg.Email.Password, cfg.Email.Host)
 	msg := fmt.Sprintf("From: %s\nTo: %s\nSubject: Verify your email\n\nClick the link to verify your email: %s", cfg.Email.From, email, verificationURL)
 
-	err = smtp.SendMail(
+	err := smtp.SendMail(
 		fmt.Sprintf("%s:%d", cfg.Email.Host, cfg.Email.Port),
 		auth,
 		cfg.Email.From,

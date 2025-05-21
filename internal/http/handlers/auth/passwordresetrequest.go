@@ -80,11 +80,11 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 
 // sendResetToken sends a password reset email to the specified email address.
 func sendResetToken(toEmail, resetToken string) error {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Println("Failed to load config:", err)
-		return err
-	}
+	cfg:=config.GetConfig()
+	// if err != nil {
+	// 	log.Println("Failed to load config:", err)
+	// 	return err
+	// }
 
 	from := cfg.Email.From
 	password := cfg.Email.Password
@@ -100,7 +100,7 @@ func sendResetToken(toEmail, resetToken string) error {
 
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
-	err = smtp.SendMail(
+	err := smtp.SendMail(
 		fmt.Sprintf("%s:%d", smtpHost, smtpPort),
 		auth,
 		from,

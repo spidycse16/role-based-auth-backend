@@ -19,11 +19,11 @@ func GetCurrentUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Load the config
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		http.Error(w, "Failed to load config", http.StatusInternalServerError)
-		return
-	}
+	cfg:=config.GetConfig()
+	// if err != nil {
+	// 	http.Error(w, "Failed to load config", http.StatusInternalServerError)
+	// 	return
+	// }
 
 	// Parse the JWT token
 	tokenString := cookie.Value

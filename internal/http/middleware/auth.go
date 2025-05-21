@@ -19,11 +19,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Load the config
-		cfg, err := config.LoadConfig()
-		if err != nil {
-			http.Error(w, "Failed to load config", http.StatusInternalServerError)
-			return
-		}
+		// cfg, err := config.LoadConfig()
+		// if err != nil {
+		// 	http.Error(w, "Failed to load config", http.StatusInternalServerError)
+		// 	return
+		// }
+		//new singletone class
+		cfg:=config.GetConfig()
 
 		// Parse the token
 		tokenString := cookie.Value

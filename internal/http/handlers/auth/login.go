@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,9 +17,17 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type UserInfo struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Type     string `json:"type"`
+}
+
 // LoginResponse represents the JSON response for a successful login.
 type LoginResponse struct {
-	Token string `json:"token"`
+	Token string   `json:"token"`
+	User  UserInfo `json:"user"`
 }
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -42,11 +49,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Load the config
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		http.Error(w, "Failed to load config", http.StatusInternalServerError)
-		return
-	}
+	cfg:=config.GetConfig()
 
 	// Connect to the database
 	db, err := database.Connect()
@@ -98,16 +101,28 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// Set cookie in response
 	http.SetCookie(w, cookie)
-
+	
 	// Set header and status code
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 
 	// Prepare your JSON response manually
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusAccepted),
-		"message": "Login successful! Cookie set.",
-		"data":    map[string]string{"token": token},
+	response := struct {
+		Status  string        `json:"status"`
+		Message string        `json:"message"`
+		Data    LoginResponse `json:"data"`
+	}{
+		Status:  "202",
+		Message: "Login successful",
+		Data: LoginResponse{
+			Token: token,
+			User: UserInfo{
+				ID:       userID,
+				Username: username,
+				Email:    req.Email,
+				Type:     userType,
+			},
+		},
 	}
 
 	// Encode response to JSON and write it to response body

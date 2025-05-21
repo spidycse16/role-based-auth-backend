@@ -67,7 +67,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Email:             req.Email,
 		PasswordHash:      string(hashedPassword),
 		EmailVerified:     false,
-		UserType:          "user", // Capitalized to match your hierarchy
+		UserType:          "user",
 		Active:            true,
 		VerificationToken: verificationToken,
 		ResetToken:        "",
