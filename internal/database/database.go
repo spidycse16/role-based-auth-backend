@@ -10,7 +10,9 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
+	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/lib/pq"
 )
@@ -98,70 +100,68 @@ func Migrate(migrationsPath string) error {
 }
 
 func InitAdminUser(admin config.AdminConfig) {
+	// Path to migration file
+	sqlFilePath := "/app/migrations/000001_init_schema/up.sql" // Adjust for your Docker setup
 
-	sqlFilePath := "/app/migrations/000001_init_schema/up.sql"
-	//sqlFilePath := "/home/shahid/Desktop/Developer-Assignment/migrations/000001_init_schema/up.sql"
-
+	// Read the SQL file
 	sqlBytes, err := os.ReadFile(sqlFilePath)
 	if err != nil {
-		log.Println("failed to read sqlFilePath")
+		log.Fatalf("Failed to read SQL file: %v", err)
 	}
 
+	// Execute the migration SQL
 	_, err = DB.Exec(string(sqlBytes))
-
 	if err != nil {
-		log.Println("DB execute error")
+		log.Fatalf("DB schema execution error: %v", err)
+	}
+	log.Println("✅ Database schema initialized.")
+
+	// Check if admin already exists
+	var exists bool
+	err = DB.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)", admin.Email).Scan(&exists)
+	if err != nil {
+		log.Fatalf("Error checking for existing admin user: %v", err)
+	}
+
+	if exists {
+		log.Println("✅ System admin already exists.")
 		return
 	}
-	log.Println("Hurray, database created..")
-	var exists bool
-	err = DB.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE email=$1)", admin.Email).Scan(&exists)
+
+	
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(admin.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatal("DB check failed:", err)
+		log.Fatalf("Password hashing failed: %v", err)
 	}
 
-	// salt_pass := os.Getenv("PASSWORD_SALT")
-	// if !exists {
-	// 	hashed, err := bcrypt.GenerateFromPassword([]byte(admin.Password+salt_pass), bcrypt.DefaultCost)
-	// 	if err != nil {
-	// 		log.Fatal("Hash error:", err)
-	// 	}
+	// Insert admin user and get user ID
+	var userID uuid.UUID
+	err = DB.QueryRow(`
+		INSERT INTO users (username, email, password_hash, user_type, email_verified)
+		VALUES ($1, $2, $3, $4, TRUE)
+		RETURNING id`,
+		admin.Username, admin.Email, string(hashedPassword), "system_admin").Scan(&userID)
 
-	// Insert user and get the user_id
-	// var user_id uuid.UUID
-	// err = DB.QueryRow(`
-	//     INSERT INTO users (username, email, password_hash, user_type)
-	//     VALUES ($1, $2, $3, $4)
-	//     RETURNING id`,
-	// 	admin.Username, admin.Email, string(hashed), admin.UserType).Scan(&user_id)
+	if err != nil {
+		log.Fatalf("Failed to insert system admin user: %v", err)
+	}
 
-	// if err != nil {
-	// 	log.Fatal("Admin insert failed:", err)
-	// }
+	// Get role ID for 'system_admin'
+	var roleID uuid.UUID
+	err = DB.QueryRow(`SELECT id FROM roles WHERE name = 'system_admin'`).Scan(&roleID)
+	if err != nil {
+		log.Fatalf("Failed to get role ID for system_admin: %v", err)
+	}
 
-	// Get role_id for 'user' role
-	// var role_id uuid.UUID
-	// err = DB.QueryRow(`
-	//     SELECT id FROM roles
-	//     WHERE name = $1`,
-	// 	admin.UserType).Scan(&role_id)
+	// Assign role to the user (assigning to self)
+	_, err = DB.Exec(`
+		INSERT INTO user_roles (user_id, role_id, assigned_by)
+		VALUES ($1, $2, $1)`,
+		userID, roleID)
 
-	// if err != nil {
-	// 	log.Fatal("Failed to get role id:", err)
-	// }
+	if err != nil {
+		log.Fatalf("Failed to assign role to system admin: %v", err)
+	}
 
-	// Assign role to user
-	// 	_, err = DB.Exec(`
-	//         INSERT INTO user_roles (user_id, role_id, assigned_by)
-	//         VALUES ($1, $2, $1)`,
-	// 		user_id, role_id)
-
-	// 	if err != nil {
-	// 		log.Fatal("Failed to assign role to admin:", err)
-	// 	}
-
-	// 	fmt.Println("System admin registered.")
-	// } else {
-	// 	fmt.Println("System admin already exists.")
-	// }
+	log.Println("🎉 System admin user created and role assigned.")
 }

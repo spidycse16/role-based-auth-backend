@@ -122,13 +122,9 @@ The backend will be accessible at `http://localhost:8080`. Use a tool like Postm
 
 Since this is a backend-only project, the System Admin role is not set automatically. Follow these steps:
 
-1. Register a new user using the `/auth/register` API endpoint.
-2. Access the PostgreSQL database (e.g., via `docker-compose exec postgres psql -U postgres`).
-3. Update the `user_type` field of the registered user to `system_admin` in the `users` table:
-
-   ```sql
-   UPDATE users SET user_type = 'system_admin' WHERE id = your_user_id;
-   ```
+1.As we have already migrated our table, a default system admin is assigned in our project
+2. You can check in the Postgresql database we already have a entry as system admin with email "admin@example.com"
+3. You can simply login as system admin with credentials email: "admin@example.com" password: "adminpassword"
 
 ## Project Overview
 

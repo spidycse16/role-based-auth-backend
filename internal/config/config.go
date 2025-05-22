@@ -119,7 +119,7 @@ func LoadConfig() (*Config, error) {
 		Admin: AdminConfig{
 			Username: getEnv("SYSTEM_ADMIN_USERNAME", "admin"),
 			Password: getEnv("SYSTEM_ADMIN_PASSWORD", "admin"),
-			Email:    getEnv("SYSTEM_ADMIN_EMAIL", "admin@example.com"),
+			Email:    getEnv("SYSTEM_ADMIN_EMAIL", "admin@gmail.com"),
 		},
 		Email: EmailConfig{
 			VerificationURL:  url + "/api/v1/auth/verify",

@@ -111,14 +111,9 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Step 4: Get system admin ID (assuming there's one system admin)
 	var systemAdminID string
-	err = db.QueryRow(`
-		SELECT u.id 
-		FROM users u
-		INNER JOIN user_roles ur ON ur.user_id = u.id
-		INNER JOIN roles r ON ur.role_id = r.id
-		WHERE r.name = 'system_admin'
-		LIMIT 1
-	`).Scan(&systemAdminID)
+	var systemAdminRoleID string
+    err = db.QueryRow(`SELECT id FROM roles WHERE name = 'system_admin'`).Scan(&systemAdminRoleID)
+
 	if err == sql.ErrNoRows {
 		http.Error(w, "System admin not found", http.StatusInternalServerError)
 		log.Println("System admin not found")
