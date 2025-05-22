@@ -89,7 +89,8 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Step 2: Clear the verification token
-	_, err = db.Exec("UPDATE users SET verification_token = NULL WHERE id = $1", userID)
+	_, err = db.Exec("UPDATE users SET verification_token = NULL, token_expiry = NULL WHERE id = $1", userID)
+
 	if err != nil {
 		http.Error(w, "Failed to clear verification token", http.StatusInternalServerError)
 		log.Println("Failed to clear verification token for user:", userID, "Error:", err)
@@ -109,18 +110,23 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Step 4: Get system admin ID (assuming there's one system admin)
-	var systemAdminID string
-	var systemAdminRoleID string
-    err = db.QueryRow(`SELECT id FROM roles WHERE name = 'system_admin'`).Scan(&systemAdminRoleID)
-
+	// Step 4: Get a user ID who has the 'system_admin' role
+	var assignedBy string
+	query = `
+		SELECT ur.user_id
+		FROM user_roles ur
+		JOIN roles r ON ur.role_id = r.id
+		WHERE r.name = 'system_admin'
+		LIMIT 1
+	`
+	err = db.QueryRow(query).Scan(&assignedBy)
 	if err == sql.ErrNoRows {
-		http.Error(w, "System admin not found", http.StatusInternalServerError)
-		log.Println("System admin not found")
+		http.Error(w, "No user with system_admin role found", http.StatusInternalServerError)
+		log.Println("No user with system_admin role found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to find system admin", http.StatusInternalServerError)
-		log.Println("Failed to get system admin ID:", err)
+		http.Error(w, "Failed to fetch system_admin user", http.StatusInternalServerError)
+		log.Println("Failed to fetch system_admin user:", err)
 		return
 	}
 
@@ -138,12 +144,14 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("userID: %s, defaultRoleID: %s, assignedBy: %s\n", userID, defaultRoleID, assignedBy)
+
 	// Step 6: Assign role if not already assigned
 	if !roleExists {
 		_, err = db.Exec(`
 			INSERT INTO user_roles (user_id, role_id, assigned_by, created_at)
 			VALUES ($1, $2, $3, NOW())
-		`, userID, defaultRoleID, systemAdminID)
+		`, userID, defaultRoleID, assignedBy)
 		if err != nil {
 			http.Error(w, "Failed to assign default role", http.StatusInternalServerError)
 			log.Println("Failed to assign default role for user:", userID, "Error:", err)

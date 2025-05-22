@@ -53,9 +53,10 @@ Update the database settings to match your PostgreSQL instance or the Dockerized
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=your_secure_password
-DB_NAME=your_database_name
+DB_PASSWORD=123
+DB_NAME=affpilot_auth
 ```
+- You can create a db named affpilot_auth for running this project or you can change the db name here
 
 - If using Docker (recommended), leave `DB_HOST=postgres` as configured in `docker-compose.yml`, and ensure `DB_PASSWORD` and `DB_NAME` match the `postgres` service settings (e.g., `123` and `affpilot_auth`).
 
