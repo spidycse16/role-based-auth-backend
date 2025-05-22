@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/smtp"
-	"strconv"
 
 	"log"
 	"strings"
@@ -20,8 +19,7 @@ import (
 
 // sendVerificationEmail sends a verification email to the user.
 func sendVerificationEmail(email, token string) error {
-	cfg:=config.GetConfig()
-	
+	cfg := config.GetConfig()
 
 	verificationURL := fmt.Sprintf("%s/%s", cfg.Email.VerificationURL, token)
 
@@ -71,14 +69,14 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer database.Close(db)
 
-	// Update the user's email verification status
+	// Step 1: Verify token and get user ID
+	var userID string
 	query := `
 		UPDATE users 
 		SET email_verified = true, updated_at = NOW() 
 		WHERE verification_token = $1 AND email_verified = false
 		RETURNING id
 	`
-	var userID string
 	err = db.QueryRow(query, token).Scan(&userID)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid or expired token", http.StatusBadRequest)
@@ -90,7 +88,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Clear the verification token to prevent reuse
+	// Step 2: Clear the verification token
 	_, err = db.Exec("UPDATE users SET verification_token = NULL WHERE id = $1", userID)
 	if err != nil {
 		http.Error(w, "Failed to clear verification token", http.StatusInternalServerError)
@@ -98,53 +96,74 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assign default "User" role
-	defaultRoleID := "7f6fa0ea-b43d-4443-8be5-d2ce1ff663e9"
-	systemAdminID := "66557562-d184-49ad-83ac-9dc3841ed365"
+	// Step 3: Get the ID of the default role ("user")
+	var defaultRoleID string
+	err = db.QueryRow(`SELECT id FROM roles WHERE name = 'user'`).Scan(&defaultRoleID)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Default role not found", http.StatusInternalServerError)
+		log.Println("Default role 'user' not found")
+		return
+	} else if err != nil {
+		http.Error(w, "Failed to fetch default role", http.StatusInternalServerError)
+		log.Println("Failed to get default role ID:", err)
+		return
+	}
 
-	// Check if the role is already assigned to avoid duplicate entries
+	// Step 4: Get system admin ID (assuming there's one system admin)
+	var systemAdminID string
+	err = db.QueryRow(`
+		SELECT u.id 
+		FROM users u
+		INNER JOIN user_roles ur ON ur.user_id = u.id
+		INNER JOIN roles r ON ur.role_id = r.id
+		WHERE r.name = 'system_admin'
+		LIMIT 1
+	`).Scan(&systemAdminID)
+	if err == sql.ErrNoRows {
+		http.Error(w, "System admin not found", http.StatusInternalServerError)
+		log.Println("System admin not found")
+		return
+	} else if err != nil {
+		http.Error(w, "Failed to find system admin", http.StatusInternalServerError)
+		log.Println("Failed to get system admin ID:", err)
+		return
+	}
+
+	// Step 5: Check if role already assigned
 	var roleExists bool
-	roleCheckQuery := `
+	err = db.QueryRow(`
 		SELECT EXISTS(
 			SELECT 1 FROM user_roles 
 			WHERE user_id = $1 AND role_id = $2
 		)
-	`
-	err = db.QueryRow(roleCheckQuery, userID, defaultRoleID).Scan(&roleExists)
+	`, userID, defaultRoleID).Scan(&roleExists)
 	if err != nil {
 		http.Error(w, "Failed to check user role", http.StatusInternalServerError)
 		log.Println("Failed to check user role for user:", userID, "Error:", err)
 		return
 	}
 
-	// If role not assigned, assign it
+	// Step 6: Assign role if not already assigned
 	if !roleExists {
 		_, err = db.Exec(`
 			INSERT INTO user_roles (user_id, role_id, assigned_by, created_at)
 			VALUES ($1, $2, $3, NOW())
 		`, userID, defaultRoleID, systemAdminID)
-
 		if err != nil {
 			http.Error(w, "Failed to assign default role", http.StatusInternalServerError)
 			log.Println("Failed to assign default role for user:", userID, "Error:", err)
 			return
 		}
 	}
+
+	// Step 7: Return success response
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // 200 OK
-
+	w.WriteHeader(http.StatusOK)
 	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
+		"status":  http.StatusOK,
 		"message": "Email verified successfully",
-		"data":    nil, // no extra data to send
+		"data":    nil,
 	}
-
 	json.NewEncoder(w).Encode(response)
-
 	log.Println("Email verified and role assigned successfully for user:", userID)
-
 }
-
-// func printToken(){
-
-// }
