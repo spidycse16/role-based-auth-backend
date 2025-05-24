@@ -52,18 +52,13 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	cfg:=config.GetConfig()
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Fetch user from the database
 	var storedHash, userID, username, userType string
 	var emailVerified bool
 	query := "SELECT id, username, user_type, password_hash, email_verified FROM users WHERE email = $1"
-	err = db.QueryRow(query, req.Email).Scan(&userID, &username, &userType, &storedHash, &emailVerified)
+	err := db.QueryRow(query, req.Email).Scan(&userID, &username, &userType, &storedHash, &emailVerified)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return

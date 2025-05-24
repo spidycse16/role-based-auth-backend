@@ -14,7 +14,7 @@ func main() {
 	log.Print("Chill",cfg)
 	// connect to database
 	database.Connect()
-
+	defer database.Close()
 	// add system admin if does not exist
 	database.InitAdminUser(cfg.Admin)
 }

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
+	// "path/filepath"
+	"sync"
+
+	// "github.com/golang-migrate/migrate/v4"
+	// "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
@@ -19,38 +21,47 @@ import (
 
 var DB *sql.DB
 
-// Connect establishes a connection to the PostgreSQL database using configuration.
-func Connect() (*sql.DB, error) {
-	// Load configuration singletone varible
-	cfg := config.GetConfig()
-	fmt.Printf("Address of cfg 2: %p\n", cfg)
-	// Build connection string
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.Name,
-	)
+var (
+	db   *sql.DB
+	once sync.Once
+)
 
-	// Open database connection
-	db, err := sql.Open(cfg.Database.Host, dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
+// GetDB returns the singleton DB instance.
+func Connect() *sql.DB {
+	once.Do(func() {
+		// Load config singleton
+		cfg := config.GetConfig()
+		fmt.Printf("Address of cfg (singleton): %p\n", cfg)
 
-	// Verify connection
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-	DB = db
-	log.Println("Database connection established successfully.")
-	return db, nil
+		// Build connection string
+		dsn := fmt.Sprintf(
+			"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+			cfg.Database.User,
+			cfg.Database.Password,
+			cfg.Database.Host,
+			cfg.Database.Port,
+			cfg.Database.Name,
+		)
+
+		fmt.Printf("DSN: %s\n", dsn)
+
+		var err error
+		db, err = sql.Open("postgres", dsn)
+		if err != nil {
+			log.Fatalf("Failed to connect to database: %v", err)
+		}
+
+		if err = db.Ping(); err != nil {
+			log.Fatalf("Failed to ping database: %v", err)
+		}
+
+		log.Println("Database connection established successfully.")
+	})
+
+	return db
 }
 
-// Close terminates the database connection.
-func Close(db *sql.DB) {
+func Close() {
 	if db != nil {
 		if err := db.Close(); err != nil {
 			log.Printf("Failed to close database connection: %v", err)
@@ -61,45 +72,41 @@ func Close(db *sql.DB) {
 }
 
 // Migrate runs all the database migrations.
-func Migrate(migrationsPath string) error {
-	db, err := Connect()
-	if err != nil {
-		return err
-	}
-	defer Close(db)
+// func Migrate(migrationsPath string) error {
+// 	db:=database.Connect()
+// 	// Get the database driver
+// 	driver, err := postgres.WithInstance(db, &postgres.Config{})
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create PostgreSQL driver: %w", err)
+// 	}
 
-	// Get the database driver
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
-	if err != nil {
-		return fmt.Errorf("failed to create PostgreSQL driver: %w", err)
-	}
+// 	// Build the migrations source path
+// 	absPath, err := filepath.Abs(migrationsPath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to resolve migrations path: %w", err)
+// 	}
 
-	// Build the migrations source path
-	absPath, err := filepath.Abs(migrationsPath)
-	if err != nil {
-		return fmt.Errorf("failed to resolve migrations path: %w", err)
-	}
+// 	// Create the migration instance
+// 	m, err := migrate.NewWithDatabaseInstance(
+// 		fmt.Sprintf("file://%s", absPath),
+// 		"postgres",
+// 		driver,
+// 	)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create migration instance: %w", err)
+// 	}
 
-	// Create the migration instance
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", absPath),
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create migration instance: %w", err)
-	}
+// 	// Run the migrations
+// 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+// 		return fmt.Errorf("failed to apply migrations: %w", err)
+// 	}
 
-	// Run the migrations
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("failed to apply migrations: %w", err)
-	}
-
-	log.Println("Database migrations applied successfully.")
-	return nil
-}
+// 	log.Println("Database migrations applied successfully.")
+// 	return nil
+// }
 
 func InitAdminUser(admin config.AdminConfig) {
+	DB=Connect()
 	// Path to migration file
 	sqlFilePath := "/app/migrations/000001_init_schema/up.sql" // Adjust for your Docker setup
 
@@ -128,7 +135,6 @@ func InitAdminUser(admin config.AdminConfig) {
 		return
 	}
 
-	
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(admin.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatalf("Password hashing failed: %v", err)

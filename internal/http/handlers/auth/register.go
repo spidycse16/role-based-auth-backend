@@ -48,6 +48,11 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Password) < 8 || len(req.Password) > 20 {
+		http.Error(w, "Password should be 8 to 20 characters long", http.StatusBadRequest)
+		return
+	}
+
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -77,12 +82,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert the user into the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Check if the email already exists
 	if exists, err := isEmailExists(db, user.Email); err != nil {

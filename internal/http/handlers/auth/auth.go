@@ -61,13 +61,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	token := strings.TrimSpace(vars["token"])
 	log.Printf("Verification Token: %s", token)
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
-		log.Println("Database connection error:", err)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Step 1: Verify token and get user ID
 	var userID string
@@ -77,7 +71,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		WHERE verification_token = $1 AND email_verified = false
 		RETURNING id
 	`
-	err = db.QueryRow(query, token).Scan(&userID)
+	err := db.QueryRow(query, token).Scan(&userID)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid or expired token", http.StatusBadRequest)
 		log.Println("Invalid or expired token:", token)

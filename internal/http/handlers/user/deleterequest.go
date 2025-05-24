@@ -26,14 +26,10 @@ func DeleteRequest(w http.ResponseWriter, r *http.Request) {
 
 	query := `UPDATE users SET deletion_requested = true, updated_at = NOW() WHERE id = $1`
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	// Connect to the database
+	db:=database.Connect()
 
-	_, err = db.Exec(query, userID)
+	_, err := db.Exec(query, userID)
 	if err != nil {
 		http.Error(w, "Failed to execute query", http.StatusInternalServerError)
 		return

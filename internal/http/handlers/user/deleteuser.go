@@ -20,12 +20,8 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	query := `DELETE FROM users WHERE id = $1 AND deletion_requested = true`
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	// Connect to the database
+	db:=database.Connect()
 
 	res, err := db.Exec(query, deleteID)
 	if err != nil {

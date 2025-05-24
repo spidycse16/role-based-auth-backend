@@ -27,12 +27,7 @@ func GetRoleDetails(w http.ResponseWriter, r *http.Request) {
 	roleID := vars["role_id"]
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Fetch role details
 	var role struct {
@@ -43,7 +38,7 @@ func GetRoleDetails(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt   string `json:"updated_at"`
 	}
 	query := `SELECT id, name, description, created_at, updated_at FROM roles WHERE id = $1`
-	err = db.QueryRow(query, roleID).Scan(&role.ID, &role.Name, &role.Description, &role.CreatedAt, &role.UpdatedAt)
+	err := db.QueryRow(query, roleID).Scan(&role.ID, &role.Name, &role.Description, &role.CreatedAt, &role.UpdatedAt)
 
 	// Handle not found and other errors
 	if err == sql.ErrNoRows {

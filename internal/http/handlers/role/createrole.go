@@ -88,13 +88,8 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect database vai", http.StatusBadRequest)
-		return
-	}
-
-	defer database.Close(db)
+	// Connect to the database
+	db:=database.Connect()
 
 	id := uuid.New()
 	query := `Insert into roles (id,name,description,created_at,updated_at) values($1,$2,$3,$4,$5)`

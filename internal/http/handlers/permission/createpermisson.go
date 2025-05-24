@@ -37,12 +37,7 @@ func CreatePermission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Insert the permission into the database
 	query := `
@@ -54,7 +49,7 @@ func CreatePermission(w http.ResponseWriter, r *http.Request) {
 	permissionID := uuid.NewString()
 	createdAt := time.Now()
 
-	_, err = db.Exec(query, permissionID, req.Name, req.Description, req.Resource, req.Action, createdAt, createdAt)
+	_, err := db.Exec(query, permissionID, req.Name, req.Description, req.Resource, req.Action, createdAt, createdAt)
 	if err != nil {
 		http.Error(w, "Failed to create permission", http.StatusInternalServerError)
 		return

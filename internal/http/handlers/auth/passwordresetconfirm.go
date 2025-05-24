@@ -24,17 +24,11 @@ func PasswordResetConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
-		log.Println("Database connection error:", err)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Check if the reset token matches for this user and email is verified
 	var storedToken string
-	err = db.QueryRow(
+	err := db.QueryRow(
 		"SELECT reset_token FROM users WHERE email = $1 AND email_verified = true",
 		reqBody.Email,
 	).Scan(&storedToken)

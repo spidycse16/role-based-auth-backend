@@ -18,16 +18,12 @@ func PromoteToModerator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+// Connect to the database
+db:=database.Connect()
 
 	// Get the role ID for "Moderator"
 	var roleID string
-	err = db.QueryRow("SELECT id FROM roles WHERE name = 'moderator'").Scan(&roleID)
+	err := db.QueryRow("SELECT id FROM roles WHERE name = 'moderator'").Scan(&roleID)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Moderator role not found", http.StatusNotFound)
 		return

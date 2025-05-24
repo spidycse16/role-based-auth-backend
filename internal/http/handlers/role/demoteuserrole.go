@@ -35,15 +35,11 @@ func DemoteUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	// Connect to the database
+	db := database.Connect()
 
 	var currentRole string
-	err = db.QueryRow("SELECT user_type FROM users WHERE id = $1", userID).Scan(&currentRole)
+	err := db.QueryRow("SELECT user_type FROM users WHERE id = $1", userID).Scan(&currentRole)
 	if err == sql.ErrNoRows {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return

@@ -17,12 +17,7 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("User Type:", userType)
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Fetch all users
 	rows, err := db.Query(`

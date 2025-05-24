@@ -27,17 +27,12 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 	roleID := vars["role_id"]
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Delete the role from the database
 	query := "DELETE FROM roles WHERE id = $1 RETURNING id"
 	var deletedRoleID string
-	err = db.QueryRow(query, roleID).Scan(&deletedRoleID)
+	err := db.QueryRow(query, roleID).Scan(&deletedRoleID)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Role not found", http.StatusNotFound)

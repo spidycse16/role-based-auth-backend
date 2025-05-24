@@ -41,12 +41,7 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Update the role in the database
 	query := `
@@ -63,7 +58,7 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt   string `json:"updated_at"`
 	}
 
-	err = db.QueryRow(query, req.Name, req.Description, roleID).Scan(
+	err := db.QueryRow(query, req.Name, req.Description, roleID).Scan(
 		&updatedRole.ID,
 		&updatedRole.Name,
 		&updatedRole.Description,

@@ -24,17 +24,11 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
-		log.Println("Database connection error:", err)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Step 1: Check if the user exists and if email is already verified
 	var emailVerified bool
-	err = db.QueryRow("SELECT email_verified FROM users WHERE email = $1", reqBody.Email).Scan(&emailVerified)
+	err := db.QueryRow("SELECT email_verified FROM users WHERE email = $1", reqBody.Email).Scan(&emailVerified)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "User with this email does not exist", http.StatusNotFound)

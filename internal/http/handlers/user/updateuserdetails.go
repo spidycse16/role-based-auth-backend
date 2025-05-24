@@ -44,18 +44,14 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	req.FirstName = strings.TrimSpace(req.FirstName)
 	req.LastName = strings.TrimSpace(req.LastName)
 
+
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Check if the new username is already taken (if provided)
 	if req.Username != "" {
 		var exists bool
-		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND id != $2)", req.Username, userID).Scan(&exists)
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND id != $2)", req.Username, userID).Scan(&exists)
 		if err != nil {
 			http.Error(w, "Failed to check username availability", http.StatusInternalServerError)
 			return
@@ -78,7 +74,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	`
 
 	// Execute the query
-	_, err = db.Exec(query, req.Username, req.FirstName, req.LastName, userID)
+	_, err := db.Exec(query, req.Username, req.FirstName, req.LastName, userID)
 	if err != nil {
 		http.Error(w, "Failed to update user", http.StatusInternalServerError)
 		return

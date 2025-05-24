@@ -35,13 +35,8 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
-
+	db:=database.Connect()
+	
 	// Fetch the user details
 	var user map[string]interface{}
 	query := `

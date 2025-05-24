@@ -26,13 +26,7 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
-		log.Println("Database connection error:", err)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Generate a new reset token
 	resetToken := uuid.NewString()

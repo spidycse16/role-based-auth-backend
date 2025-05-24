@@ -23,12 +23,7 @@ func ListAllPermissions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Fetch all permissions
 	rows, err := db.Query("SELECT id, name, description, resource, action, created_at, updated_at FROM permissions ORDER BY created_at ASC")
@@ -89,12 +84,7 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 	permissionID := vars["permission_id"]
 
 	// Connect to the database
-	db, err := database.Connect()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer database.Close(db)
+	db:=database.Connect()
 
 	// Fetch the permission details
 	var id, name, description, resource, action, createdAt, updatedAt string
@@ -103,7 +93,7 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 	FROM permissions
 	WHERE id = $1
 	`
-	err = db.QueryRow(query, permissionID).Scan(&id, &name, &description, &resource, &action, &createdAt, &updatedAt)
+	err := db.QueryRow(query, permissionID).Scan(&id, &name, &description, &resource, &action, &createdAt, &updatedAt)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Permission not found", http.StatusNotFound)
 		return

@@ -10,12 +10,9 @@ import (
 
 // FetchAllUserPermissions returns all permissions of a given user
 func FetchAllUserPermissions(userID string) ([]string, error) {
-	db, err := database.Connect()
-	if err != nil {
-		fmt.Println("[ERROR] Failed to connect to database:", err)
-		return nil, err
-	}
-	defer database.Close(db)
+	
+// Connect to the database
+db:=database.Connect()
 
 	query := `
 		SELECT p.name
