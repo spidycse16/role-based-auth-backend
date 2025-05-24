@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	// "path/filepath"
 	"sync"
@@ -55,8 +56,15 @@ func Connect() *sql.DB {
 			log.Fatalf("Failed to ping database: %v", err)
 		}
 
-		log.Println("Database connection established successfully.")
+		// Set connection pool configs
+		db.SetMaxOpenConns(25)                  // Max active connections
+		db.SetMaxIdleConns(5)                   // Max idle connections
+		db.SetConnMaxLifetime(30 * time.Minute) // Recycle old connections
+
+		log.Println("Database connection established with pooling.")
 	})
+	stats := db.Stats()
+	fmt.Printf("Open: %d, InUse: %d, Idle: %d\n", stats.OpenConnections, stats.InUse, stats.Idle)
 
 	return db
 }
@@ -106,7 +114,7 @@ func Close() {
 // }
 
 func InitAdminUser(admin config.AdminConfig) {
-	DB=Connect()
+	DB = Connect()
 	// Path to migration file
 	sqlFilePath := "/app/migrations/000001_init_schema/up.sql" // Adjust for your Docker setup
 

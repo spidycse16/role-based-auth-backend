@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/models"
 	"golang.org/x/crypto/bcrypt"
@@ -61,28 +62,26 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate verification token and expiry
-	verificationToken := uuid.NewString()
-	tokenExpiry := time.Now().Add(24 * time.Hour)
+	// verificationToken := uuid.NewString()
+	// tokenExpiry := time.Now().Add(24 * time.Hour)
 
 	// Create the user model
 	user := models.User{
-		Username:          req.Username,
-		FirstName:         req.FirstName,
-		LastName:          req.LastName,
-		Email:             req.Email,
-		PasswordHash:      string(hashedPassword),
-		EmailVerified:     false,
-		UserType:          "user",
-		Active:            true,
-		VerificationToken: verificationToken,
-		ResetToken:        "",
-		TokenExpiry:       &tokenExpiry,
-		CreatedAt:         time.Now(),
-		UpdatedAt:         time.Now(),
+		Username:      req.Username,
+		FirstName:     req.FirstName,
+		LastName:      req.LastName,
+		Email:         req.Email,
+		PasswordHash:  string(hashedPassword),
+		EmailVerified: false,
+		UserType:      "user",
+		Active:        true,
+		ResetToken:    "",
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	// Insert the user into the database
-	db:=database.Connect()
+	db := database.Connect()
 
 	// Check if the email already exists
 	if exists, err := isEmailExists(db, user.Email); err != nil {
@@ -93,17 +92,46 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	query := `
-	INSERT INTO users (username, email, password_hash, first_name, last_name, email_verified, user_type, active, verification_token, token_expiry, created_at, updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	INSERT INTO users (username, email, password_hash, first_name, last_name, email_verified, user_type, active, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	RETURNING id
 	`
 
-	err = db.QueryRow(query, user.Username, user.Email, user.PasswordHash, user.FirstName, user.LastName, user.EmailVerified, user.UserType, user.Active, user.VerificationToken, user.TokenExpiry, user.CreatedAt, user.UpdatedAt).Scan(&user.ID)
+	err = db.QueryRow(query,
+		user.Username,
+		user.Email,
+		user.PasswordHash,
+		user.FirstName,
+		user.LastName,
+		user.EmailVerified,
+		user.UserType,
+		user.Active,
+		user.CreatedAt,
+		user.UpdatedAt,
+	).Scan(&user.ID)
+
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
+	cfg := config.GetConfig()
+	secretKey := cfg.JWT.Secret
+	// Create verification token
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"exp":     time.Now().Add(cfg.Email.VerificationTTL).Unix(),
+		"iat":     time.Now().Unix(),
+		"purpose": "email_verification",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	verificationToken, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		return
+	}
 	// Send verification email
 	if err := sendVerificationEmail(req.Email, verificationToken); err != nil {
 		http.Error(w, "Failed to send verification email", http.StatusInternalServerError)

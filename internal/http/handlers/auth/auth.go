@@ -57,37 +57,46 @@ func generateJWT(userID, username, userType, secret string, expiry time.Duration
 //returns the global token
 
 func VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	token := strings.TrimSpace(vars["token"])
-	log.Printf("Verification Token: %s", token)
 
-	db:=database.Connect()
+	cfg := config.GetConfig()
+	vars := mux.Vars(r)
+	// token := strings.TrimSpace(vars["token"])
+	// log.Printf("Verification Token: %s", token)
+
+	db := database.Connect()
 
 	// Step 1: Verify token and get user ID
-	var userID string
-	query := `
-		UPDATE users 
-		SET email_verified = true, updated_at = NOW() 
-		WHERE verification_token = $1 AND email_verified = false
-		RETURNING id
-	`
-	err := db.QueryRow(query, token).Scan(&userID)
-	if err == sql.ErrNoRows {
+	tokenString := strings.TrimSpace(vars["token"])
+	claims := &jwt.MapClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cfg.JWT.Secret), nil
+	})
+	if err != nil || !token.Valid {
 		http.Error(w, "Invalid or expired token", http.StatusBadRequest)
-		log.Println("Invalid or expired token:", token)
-		return
-	} else if err != nil {
-		http.Error(w, "Failed to verify email", http.StatusInternalServerError)
-		log.Println("Database error during verification:", err)
 		return
 	}
 
-	// Step 2: Clear the verification token
-	_, err = db.Exec("UPDATE users SET verification_token = NULL, token_expiry = NULL WHERE id = $1", userID)
+	userID, ok := (*claims)["user_id"].(string)
+	if !ok {
+		http.Error(w, "Invalid token payload", http.StatusBadRequest)
+		return
+	}
 
+	// Step 2: Chekcks the users
+	var exists bool
+	err = db.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, userID).Scan(&exists)
+	if err != nil || !exists {
+		http.Error(w, "User not found", http.StatusBadRequest)
+		log.Println("User not found for ID from token:", userID)
+		return
+	}
+
+	// Step 2.1: Update email_verified = true
+	_, err = db.Exec(`UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1`, userID)
 	if err != nil {
-		http.Error(w, "Failed to clear verification token", http.StatusInternalServerError)
-		log.Println("Failed to clear verification token for user:", userID, "Error:", err)
+		http.Error(w, "Failed to verify email", http.StatusInternalServerError)
+		log.Println("Failed to update email_verified for user:", userID, "Error:", err)
 		return
 	}
 
@@ -106,7 +115,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Step 4: Get a user ID who has the 'system_admin' role
 	var assignedBy string
-	query = `
+	query := `
 		SELECT ur.user_id
 		FROM user_roles ur
 		JOIN roles r ON ur.role_id = r.id

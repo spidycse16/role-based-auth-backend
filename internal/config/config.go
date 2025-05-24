@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds all configuration for the application
+// Config holds all configuration for the applicationb
 type Config struct {
 	App      AppConfig
 	Database DatabaseConfig
@@ -50,7 +50,6 @@ type AdminConfig struct {
 }
 
 // EmailConfig holds email configuration
-// EmailConfig holds email configuration
 type EmailConfig struct {
 	VerificationURL  string
 	PasswordResetURL string
@@ -60,7 +59,8 @@ type EmailConfig struct {
 	Username         string
 	Password         string
 	Secure           bool
-	VerificationTTL  int
+	VerificationTTL time.Duration
+
 }
 
 // ServerConfig holds server configuration
@@ -82,7 +82,11 @@ func LoadConfig() (*Config, error) {
 	dbPort, _ := strconv.Atoi(getEnv("DB_PORT", "5432"))
 
 	// Parse JWT expiry
-	jwtExpiry, _ := time.ParseDuration(getEnv("JWT_EXPIRY", "24h"))
+	jwtExpiryStr := getEnv("JWT_EXPIRY", "24h")
+	jwtExpiry, err := time.ParseDuration(jwtExpiryStr)
+	if err != nil {
+		log.Fatalf("Invalid JWT_EXPIRY value: %v", err)
+	}
 
 	// Parse email port
 	emailPort, _ := strconv.Atoi(getEnv("EMAIL_PORT", "587"))
@@ -91,7 +95,12 @@ func LoadConfig() (*Config, error) {
 	emailSecure, _ := strconv.ParseBool(getEnv("EMAIL_SECURE", "true"))
 
 	// Parse verification token TTL
-	verificationTTL, _ := strconv.Atoi(getEnv("VERIFICATION_TOKEN_TTL", "5"))
+	// verificationTTL, _ := strconv.Atoi(getEnv("VERIFICATION_TOKEN_TTL", "5"))
+	verificationTTLStr := getEnv("VERIFICATION_TOKEN_TTL", "5m")
+	verificationTTL, err := time.ParseDuration(verificationTTLStr)
+	if err != nil {
+		log.Fatalf("Invalid VERIFICATION_TOKEN_TTL value: %v", err)
+	}
 
 	// Parse server port
 	serverPort, _ := strconv.Atoi(getEnv("SERVER_PORT", "8080"))
@@ -118,8 +127,8 @@ func LoadConfig() (*Config, error) {
 		},
 		Admin: AdminConfig{
 			Username: getEnv("SYSTEM_ADMIN_USERNAME", "admin"),
-			Password: getEnv("SYSTEM_ADMIN_PASSWORD", "admin"),
-			Email:    getEnv("SYSTEM_ADMIN_EMAIL", "admin@gmail.com"),
+			Password: getEnv("SYSTEM_ADMIN_PASSWORD", "adminpassword"),
+			Email:    getEnv("SYSTEM_ADMIN_EMAIL", "admin@example.com"),
 		},
 		Email: EmailConfig{
 			VerificationURL:  url + "/api/v1/auth/verify",
