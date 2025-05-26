@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -26,12 +27,13 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db:=database.Connect()
+	db := database.Connect()
 
-	// Generate a new reset token
+	//Generate a new reset token
 	resetToken := uuid.NewString()
-
-	// Store the reset token in the database
+	email := reqBody.Email
+	query := `Select id from users where email=$1`
+	//Store the reset token in the database
 	res, err := db.Exec(
 		"UPDATE users SET reset_token = $1, updated_at = NOW() WHERE email = $2 AND email_verified = true",
 		resetToken,
@@ -49,6 +51,37 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		log.Println("No verified user found with email:", reqBody.Email)
 		return
 	}
+	var userID int
+	err = db.QueryRow(query,email).Scan(&userID)
+	if err!=nil{
+		if err==sql.ErrNoRows{
+			fmt.Println("No user found with this email")
+		}else{
+			fmt.Println("Invalid query")
+		}
+	}
+	fmt.Println("User id is",userID)
+
+	// email := reqBody.Email
+
+	// var userID uuid.UUID
+	// query := `SELECT id FROM users WHERE email = $1 AND email_verified = true`
+
+	// err := db.QueryRow(query, email).Scan(&userID)
+	// fmt.Println("user id is",userID)
+	// if err == sql.ErrNoRows {
+	// 	fmt.Println("No verified user found with this email")
+	// 	return
+	// } else if err != nil {
+	// 	fmt.Println("Query error:", err)
+	// 	return
+	// }
+
+	// //fmt.Println("User id is", userID)
+
+
+
+	// resetToken := "dfuhfuh"
 
 	// Send the password reset email
 	if err := sendResetToken(reqBody.Email, resetToken); err != nil {
@@ -74,7 +107,7 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 
 // sendResetToken sends a password reset email to the specified email address.
 func sendResetToken(toEmail, resetToken string) error {
-	cfg:=config.GetConfig()
+	cfg := config.GetConfig()
 	// if err != nil {
 	// 	log.Println("Failed to load config:", err)
 	// 	return err

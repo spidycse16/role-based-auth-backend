@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -10,55 +11,51 @@ import (
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
 )
 
+type User struct {
+	ID            string `json:"id"`
+	Username      string `json:"username"`
+	Email         string `json:"email"`
+	FirstName     string `json:"first_name"`
+	LastName      string `json:"last_name"`
+	UserType      string `json:"user_type"`
+	EmailVerified bool   `json:"email_verified"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
 func ListAllUsers(w http.ResponseWriter, r *http.Request) {
-	// Extract the user type from the context
+	fmt.Println("ListAllUsers handler called")
 	userType := middleware.GetUserType(r)
-	fmt.Println(r)
 	fmt.Println("User Type:", userType)
 
-	// Connect to the database
-	db:=database.Connect()
+	db := database.Connect()
 
-	// Fetch all users
 	rows, err := db.Query(`
 		SELECT id, username, email, first_name, last_name, user_type, email_verified, created_at, updated_at
-		FROM users
-		ORDER BY created_at DESC
+		FROM users ORDER BY created_at DESC
 	`)
+	fmt.Println(rows)
 	if err != nil {
+		log.Println("Query Error:", err)
 		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	// Collect users
-	var users []map[string]interface{}
+	var users []User
 	for rows.Next() {
-		var id, username, email, firstName, lastName, userType string
-		var emailVerified bool
-		var createdAt, updatedAt string
-
-		if err := rows.Scan(&id, &username, &email, &firstName, &lastName, &userType, &emailVerified, &createdAt, &updatedAt); err != nil {
+		var user User
+		if err := rows.Scan(
+			&user.ID, &user.Username, &user.Email,
+			&user.FirstName, &user.LastName, &user.UserType,
+			&user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
+		); err != nil {
+			log.Println("Scan Error:", err)
 			http.Error(w, "Failed to read user data", http.StatusInternalServerError)
 			return
 		}
-
-		users = append(users, map[string]interface{}{
-			"id":             id,
-			"username":       username,
-			"email":          email,
-			"first_name":     firstName,
-			"last_name":      lastName,
-			"user_type":      userType,
-			"email_verified": emailVerified,
-			"created_at":     createdAt,
-			"updated_at":     updatedAt,
-		})
+		users = append(users, user)
 	}
-
-	// Return the users as JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 	response := map[string]interface{}{
 		"status":  strconv.Itoa(http.StatusOK),
@@ -66,6 +63,11 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 		"data":    users,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Println("JSON Encode Error:", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }

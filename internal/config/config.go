@@ -19,6 +19,7 @@ type Config struct {
 	Admin    AdminConfig
 	Email    EmailConfig
 	Server   ServerConfig
+	Password PasswordConfig
 }
 
 // AppConfig holds application-specific configuration
@@ -59,13 +60,16 @@ type EmailConfig struct {
 	Username         string
 	Password         string
 	Secure           bool
-	VerificationTTL time.Duration
-
+	VerificationTTL  time.Duration
 }
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
 	Port int
+}
+
+type PasswordConfig struct {
+	PasswordResetTTL time.Duration
 }
 
 var (
@@ -100,6 +104,12 @@ func LoadConfig() (*Config, error) {
 	verificationTTL, err := time.ParseDuration(verificationTTLStr)
 	if err != nil {
 		log.Fatalf("Invalid VERIFICATION_TOKEN_TTL value: %v", err)
+	}
+
+	passwordResetTTL := getEnv("PASSWORD_RESET_TTL","5m")
+	passwordTTL, err := time.ParseDuration(passwordResetTTL)
+	if err != nil {
+		log.Fatalf("Invalid password reset token %v", err)
 	}
 
 	// Parse server port
@@ -143,6 +153,9 @@ func LoadConfig() (*Config, error) {
 		},
 		Server: ServerConfig{
 			Port: serverPort,
+		},
+		Password: PasswordConfig{
+			PasswordResetTTL: passwordTTL,
 		},
 	}, nil
 }

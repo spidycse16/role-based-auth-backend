@@ -6,8 +6,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 )
 
@@ -24,11 +27,16 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db:=database.Connect()
+	db := database.Connect()
 
-	// Step 1: Check if the user exists and if email is already verified
+	// Step 1: Check if user exists and get user_id, email_verified
+	var userID uuid.UUID
 	var emailVerified bool
-	err := db.QueryRow("SELECT email_verified FROM users WHERE email = $1", reqBody.Email).Scan(&emailVerified)
+	err := db.QueryRow(
+		"SELECT id, email_verified FROM users WHERE email = $1",
+		reqBody.Email,
+	).Scan(&userID, &emailVerified)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "User with this email does not exist", http.StatusNotFound)
@@ -41,25 +49,40 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if emailVerified {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
 		response := map[string]interface{}{
 			"status":  strconv.Itoa(http.StatusOK),
 			"message": "Email already verified",
 			"data":    nil,
 		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 		log.Println("Email already verified for:", reqBody.Email)
 		return
 	}
 
 	// Step 2: Generate a new verification token
-	newToken := uuid.NewString()
+	cfg := config.GetConfig()
+	secretKey := cfg.JWT.Secret
+	claims := jwt.MapClaims{
+		"user_id": userID.String(),
+		"email":   reqBody.Email,
+		"exp":     time.Now().Add(cfg.Email.VerificationTTL).Unix(),
+		"iat":     time.Now().Unix(),
+		"purpose": "email_verification",
+	}
 
-	// Step 3: Update the verification token in the database
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	verificationToken, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		log.Println("Token generation failed:", err)
+		return
+	}
+
+	// Step 3: Update the verification token in database (optional field)
 	_, err = db.Exec(
-		"UPDATE users SET verification_token = $1, updated_at = NOW() WHERE email = $2 AND email_verified = false",
-		newToken,
+		"UPDATE users SET updated_at = NOW() WHERE email = $1 AND email_verified = false",
 		reqBody.Email,
 	)
 	if err != nil {
@@ -69,20 +92,20 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Step 4: Send the verification email
-	if err := sendVerificationEmail(reqBody.Email, newToken); err != nil {
+	if err := sendVerificationEmail(reqBody.Email, verificationToken); err != nil {
 		http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
 		log.Println("Failed to send verification email to:", reqBody.Email, "Error:", err)
 		return
 	}
 
-	// Step 5: Success response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// Step 5: Return success response
 	response := map[string]interface{}{
 		"status":  strconv.Itoa(http.StatusOK),
 		"message": "Verification email sent successfully",
 		"data":    nil,
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 
 	log.Println("Verification email resent successfully to:", reqBody.Email)
