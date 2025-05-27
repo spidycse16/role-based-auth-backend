@@ -13,7 +13,10 @@ import (
 func DeleteRequest(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	deleteID := mux.Vars(r)["user_id"]
-
+	userType := middleware.GetUserType(r)
+	if userType == "system_admin" {
+		http.Error(w, "System admin cant be deleted", http.StatusBadRequest)
+	}
 	if userID == "" || deleteID == "" {
 		http.Error(w, "You cannot access this page!", http.StatusBadRequest)
 		return
@@ -27,7 +30,7 @@ func DeleteRequest(w http.ResponseWriter, r *http.Request) {
 	query := `UPDATE users SET deletion_requested = true, updated_at = NOW() WHERE id = $1`
 
 	// Connect to the database
-	db:=database.Connect()
+	db := database.Connect()
 
 	_, err := db.Exec(query, userID)
 	if err != nil {

@@ -108,7 +108,8 @@ WHERE name IN (
     'user:read:all', 
     'user:read:self', 
     'user:update:self', 
-    'user:delete:self'
+    'user:delete:self',
+    'user:delete:all'
 );
 
 -- User permissions

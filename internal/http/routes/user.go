@@ -24,6 +24,5 @@ func RegisterUserRoutes(r *mux.Router) {
 
 	users.Handle("/{user_id}", middleware.RequireAnyPermission([]string{"user:delete:all"}, http.HandlerFunc(handlers.DeleteUser))).Methods(http.MethodDelete)
 
-	
 	// users.HandleFunc("/{user_id}/demote", handlers.DemoteUserRole).Methods(http.MethodPost) // Admin+
 }
