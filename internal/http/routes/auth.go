@@ -19,5 +19,7 @@ func RegisterRoutes(router *mux.Router) {
 	auth.HandleFunc("/resend-verification", handlers.ResendVerificationEmail).Methods(http.MethodPost)
 	auth.HandleFunc("/password-reset-request", handlers.PasswordResetRequest).Methods(http.MethodPost)
 	auth.HandleFunc("/password-reset-confirm", handlers.PasswordResetConfirm).Methods(http.MethodPost)
+	auth.HandleFunc("/password-reset", handlers.PasswordReset).Methods(http.MethodPost)
+
 
 }

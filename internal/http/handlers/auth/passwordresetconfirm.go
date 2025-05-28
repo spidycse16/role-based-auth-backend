@@ -11,6 +11,7 @@ import (
 )
 
 func PasswordResetConfirm(w http.ResponseWriter, r *http.Request) {
+
 	type RequestBody struct {
 		Email       string `json:"email"`
 		ResetToken  string `json:"reset_token"`

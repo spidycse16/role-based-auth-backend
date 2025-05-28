@@ -8,11 +8,19 @@ import (
 	"net/http"
 	"net/smtp"
 	"strconv"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 )
+
+type ResetPasswordClaims struct {
+	Email   string `json:"email"`
+	Purpose string `json:"purpose"`
+	jwt.RegisteredClaims
+}
 
 // PasswordResetRequest handles requests to initiate password reset by sending an email with a reset token.
 func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +34,30 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		log.Println("Invalid request body:", err)
 		return
 	}
+	//frontend er jonno token
+	cfg := config.GetConfig()
+	secretKey := cfg.JWT.Secret
+
+	claims := ResetPasswordClaims{
+		Email:   reqBody.Email,
+		Purpose: "password_reset",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		log.Println("JWT generation error:", err)
+		return
+	}
+
+	fmt.Println(signedToken)
+	//front er toekn
 
 	db := database.Connect()
 
@@ -52,39 +84,17 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var userID int
-	err = db.QueryRow(query,email).Scan(&userID)
-	if err!=nil{
-		if err==sql.ErrNoRows{
+	err = db.QueryRow(query, email).Scan(&userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			fmt.Println("No user found with this email")
-		}else{
+		} else {
 			fmt.Println("Invalid query")
 		}
 	}
-	fmt.Println("User id is",userID)
+	fmt.Println("User id is", userID)
 
-	// email := reqBody.Email
-
-	// var userID uuid.UUID
-	// query := `SELECT id FROM users WHERE email = $1 AND email_verified = true`
-
-	// err := db.QueryRow(query, email).Scan(&userID)
-	// fmt.Println("user id is",userID)
-	// if err == sql.ErrNoRows {
-	// 	fmt.Println("No verified user found with this email")
-	// 	return
-	// } else if err != nil {
-	// 	fmt.Println("Query error:", err)
-	// 	return
-	// }
-
-	// //fmt.Println("User id is", userID)
-
-
-
-	// resetToken := "dfuhfuh"
-
-	// Send the password reset email
-	if err := sendResetToken(reqBody.Email, resetToken); err != nil {
+	if err := sendResetToken(reqBody.Email, resetToken, signedToken); err != nil {
 		http.Error(w, "Failed to send password reset email", http.StatusInternalServerError)
 		log.Println("Failed to send password reset email to:", reqBody.Email, "Error:", err)
 		return
@@ -106,24 +116,37 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 // sendResetToken sends a password reset email to the specified email address.
-func sendResetToken(toEmail, resetToken string) error {
+func sendResetToken(toEmail, resetToken, signedToken string) error {
 	cfg := config.GetConfig()
-	// if err != nil {
-	// 	log.Println("Failed to load config:", err)
-	// 	return err
-	// }
 
 	from := cfg.Email.From
 	password := cfg.Email.Password
 	smtpHost := cfg.Email.Host
 	smtpPort := cfg.Email.Port
 
-	subject := "Password Reset Verification Code"
-	body := fmt.Sprintf(
-		"Hello,\n\nYou requested to reset your password. Use the following verification code to reset it:\n\n%s\n\nIf you did not request a password reset, please ignore this email.\n\nThank you.",
-		resetToken,
-	)
-	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", from, toEmail, subject, body)
+	subject := "Password Reset Request"
+
+	resetLink := fmt.Sprintf("http://localhost:5173/reset-password?token=%s", signedToken)
+
+	// Use HTML content for email body
+	body := fmt.Sprintf(`
+		<html>
+		<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+			<h2>Password Reset Request</h2>
+			<p>Hello,</p>
+			<p>You requested to reset your password. Use the following verification code:</p>
+			<h3 style="background-color: #f3f3f3; padding: 10px; display: inline-block;">%s</h3>
+			<p>Or click the button below to reset your password directly:</p>
+			<a href="%s" style="display: inline-block; padding: 10px 20px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
+			<p>If you did not request a password reset, please ignore this email.</p>
+			<p>Thank you.</p>
+		</body>
+		</html>
+	`, resetToken, resetLink)
+
+	// Add HTML content-type in headers
+	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n%s",
+		from, toEmail, subject, body)
 
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
@@ -139,6 +162,6 @@ func sendResetToken(toEmail, resetToken string) error {
 		return err
 	}
 
-	log.Println("Password reset verification code sent successfully to:", toEmail)
+	log.Println("Password reset email sent successfully to:", toEmail)
 	return nil
 }
