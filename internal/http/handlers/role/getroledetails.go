@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
-	"strconv"
+
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+		"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // GetRoleDetails returns the details of a specific role
@@ -18,7 +18,8 @@ func GetRoleDetails(w http.ResponseWriter, r *http.Request) {
 
 	// Allow only Admin and SystemAdmin
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
@@ -42,23 +43,26 @@ func GetRoleDetails(w http.ResponseWriter, r *http.Request) {
 
 	// Handle not found and other errors
 	if err == sql.ErrNoRows {
-		http.Error(w, "Role not found", http.StatusNotFound)
+		// http.Error(w, "Role not found", http.StatusNotFound)
+		utils.ErrorResponse(w, http.StatusNotFound, "Role not found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to fetch role details", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch role details", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch role details")
 		return
 	}
 
 	// Return the role details as JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Role details retrieved successfully",
-		"data":    role,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "Role details retrieved successfully",
+	// 	"data":    role,
+	// }
 
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "Role details retrieved successfully", role)
 
 }

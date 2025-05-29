@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 func GetUserDetails(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +20,8 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 
 	//Allow only authenticated users
 	if userType == "" || userID == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		// http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -30,13 +30,14 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 
 	//Allow only the user themselves or Admin/SystemAdmin
 	if requestedUserID != userID && userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
 	// Connect to the database
-	db:=database.Connect()
-	
+	db := database.Connect()
+
 	// Fetch the user details
 	var user map[string]interface{}
 	query := `
@@ -52,9 +53,11 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 
 	if err := row.Scan(&id, &username, &email, &firstName, &lastName, &userTypeDB, &emailVerified, &createdAt, &updatedAt); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "User not found", http.StatusNotFound)
+			// http.Error(w, "User not found", http.StatusNotFound)
+			utils.ErrorResponse(w, http.StatusNotFound, "User not found")
 		} else {
-			http.Error(w, "Failed to fetch user details", http.StatusInternalServerError)
+			// http.Error(w, "Failed to fetch user details", http.StatusInternalServerError)
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch user details")
 		}
 		return
 	}
@@ -71,15 +74,16 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 		"updated_at":     updatedAt,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "User details retrieved successfully",
-		"data":    user,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "User details retrieved successfully",
+	// 	"data":    user,
+	// }
 
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "User details retrieved successfully", user)
 
 }

@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 func GetAllRole(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +16,8 @@ func GetAllRole(w http.ResponseWriter, r *http.Request) {
 
 	// Allow only Admin and SystemAdmin
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
@@ -27,7 +27,8 @@ func GetAllRole(w http.ResponseWriter, r *http.Request) {
 	// Fetch all roles (now including description)
 	rows, err := db.Query("SELECT id, name, description FROM roles ORDER BY created_at ASC")
 	if err != nil {
-		http.Error(w, "Failed to fetch roles", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch roles", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch roles")
 		return
 	}
 	defer rows.Close()
@@ -37,7 +38,8 @@ func GetAllRole(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id, name, description string
 		if err := rows.Scan(&id, &name, &description); err != nil {
-			http.Error(w, "Failed to read roles", http.StatusInternalServerError)
+			// http.Error(w, "Failed to read roles", http.StatusInternalServerError)
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to read roles")
 			return
 		}
 		roles = append(roles, map[string]interface{}{
@@ -48,14 +50,15 @@ func GetAllRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return the roles as JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Roles retrieved successfully",
-		"data":    roles,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "Roles retrieved successfully",
+	// 	"data":    roles,
+	// }
 
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "Roles retrieved successfully", roles)
 }

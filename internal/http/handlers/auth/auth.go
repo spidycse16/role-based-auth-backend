@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/smtp"
@@ -15,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // sendVerificationEmail sends a verification email to the user.
@@ -73,13 +73,14 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return []byte(cfg.JWT.Secret), nil
 	})
 	if err != nil || !token.Valid {
-		http.Error(w, "Invalid or expired token", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Token")
 		return
 	}
 
 	userID, ok := (*claims)["user_id"].(string)
 	if !ok {
-		http.Error(w, "Invalid token payload", http.StatusBadRequest)
+		// http.Error(w, "Invalid token payload", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Token Payload")
 		return
 	}
 
@@ -87,7 +88,8 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var exists bool
 	err = db.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, userID).Scan(&exists)
 	if err != nil || !exists {
-		http.Error(w, "User not found", http.StatusBadRequest)
+		// http.Error(w, "User not found", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Token")
 		log.Println("User not found for ID from token:", userID)
 		return
 	}
@@ -95,7 +97,8 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	// Step 2.1: Update email_verified = true
 	_, err = db.Exec(`UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1`, userID)
 	if err != nil {
-		http.Error(w, "Failed to verify email", http.StatusInternalServerError)
+		// http.Error(w, "Failed to verify email", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to verify email")
 		log.Println("Failed to update email_verified for user:", userID, "Error:", err)
 		return
 	}
@@ -104,11 +107,13 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var defaultRoleID string
 	err = db.QueryRow(`SELECT id FROM roles WHERE name = 'user'`).Scan(&defaultRoleID)
 	if err == sql.ErrNoRows {
-		http.Error(w, "Default role not found", http.StatusInternalServerError)
+		// http.Error(w, "Default role not found", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Default role not found")
 		log.Println("Default role 'user' not found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to fetch default role", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch default role", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch default role")
 		log.Println("Failed to get default role ID:", err)
 		return
 	}
@@ -124,11 +129,13 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	`
 	err = db.QueryRow(query).Scan(&assignedBy)
 	if err == sql.ErrNoRows {
-		http.Error(w, "No user with system_admin role found", http.StatusInternalServerError)
+		// http.Error(w, "No user with system_admin role found", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "No user with system_role found")
 		log.Println("No user with system_admin role found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to fetch system_admin user", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch system_admin user", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch system_admin")
 		log.Println("Failed to fetch system_admin user:", err)
 		return
 	}
@@ -142,7 +149,8 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		)
 	`, userID, defaultRoleID).Scan(&roleExists)
 	if err != nil {
-		http.Error(w, "Failed to check user role", http.StatusInternalServerError)
+		// http.Error(w, "Failed to check user role", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to check user role")
 		log.Println("Failed to check user role for user:", userID, "Error:", err)
 		return
 	}
@@ -156,20 +164,14 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			VALUES ($1, $2, $3, NOW())
 		`, userID, defaultRoleID, assignedBy)
 		if err != nil {
-			http.Error(w, "Failed to assign default role", http.StatusInternalServerError)
+			// http.Error(w, "Failed to assign default role", http.StatusInternalServerError)
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to assign default role")
 			log.Println("Failed to assign default role for user:", userID, "Error:", err)
 			return
 		}
 	}
 
 	// Step 7: Return success response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{
-		"status":  http.StatusOK,
-		"message": "Email verified successfully",
-		"data":    nil,
-	}
-	json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w,200,"Email Verified Successfuly",nil)
 	log.Println("Email verified and role assigned successfully for user:", userID)
 }

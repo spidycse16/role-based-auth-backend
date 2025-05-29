@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // ResendVerificationEmail handles resending the verification email to unverified users.
@@ -22,7 +22,8 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 
 	var reqBody RequestBody
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		// http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		log.Println("Invalid request body:", err)
 		return
 	}
@@ -39,24 +40,27 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "User with this email does not exist", http.StatusNotFound)
+			// http.Error(w, "User with this email does not exist", http.StatusNotFound)
+			utils.ErrorResponse(w, http.StatusNotFound, "User with this email does not exist")
 			log.Println("No user found with email:", reqBody.Email)
 			return
 		}
-		http.Error(w, "Database query error", http.StatusInternalServerError)
+		// http.Error(w, "Database query error", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Database query error")
 		log.Println("Query error for email:", reqBody.Email, "Error:", err)
 		return
 	}
 
 	if emailVerified {
-		response := map[string]interface{}{
-			"status":  strconv.Itoa(http.StatusOK),
-			"message": "Email already verified",
-			"data":    nil,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		// response := map[string]interface{}{
+		// 	"status":  strconv.Itoa(http.StatusOK),
+		// 	"message": "Email already verified",
+		// 	"data":    nil,
+		// }
+		// w.Header().Set("Content-Type", "application/json")
+		// w.WriteHeader(http.StatusOK)
+		// json.NewEncoder(w).Encode(response)
+		utils.SuccessResponse(w, http.StatusOK, "Email already verified",nil)
 		log.Println("Email already verified for:", reqBody.Email)
 		return
 	}
@@ -75,7 +79,8 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	verificationToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		// http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to generate verification token")
 		log.Println("Token generation failed:", err)
 		return
 	}
@@ -86,27 +91,23 @@ func ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 		reqBody.Email,
 	)
 	if err != nil {
-		http.Error(w, "Failed to update verification token", http.StatusInternalServerError)
+		// http.Error(w, "Failed to update verification token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to update verification token")
 		log.Println("Failed to update verification token for:", reqBody.Email, "Error:", err)
 		return
 	}
 
 	// Step 4: Send the verification email
 	if err := sendVerificationEmail(reqBody.Email, verificationToken); err != nil {
-		http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
+		// http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to send verification email")
 		log.Println("Failed to send verification email to:", reqBody.Email, "Error:", err)
 		return
 	}
 
 	// Step 5: Return success response
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Verification email sent successfully",
-		"data":    nil,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+
+	utils.SuccessResponse(w, http.StatusOK, "Verification email sent successfully",nil)
 
 	log.Println("Verification email resent successfully to:", reqBody.Email)
 }

@@ -1,14 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 type User struct {
@@ -37,7 +36,8 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(rows)
 	if err != nil {
 		log.Println("Query Error:", err)
-		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch users")
 		return
 	}
 	defer rows.Close()
@@ -51,23 +51,25 @@ func ListAllUsers(w http.ResponseWriter, r *http.Request) {
 			&user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 		); err != nil {
 			log.Println("Scan Error:", err)
-			http.Error(w, "Failed to read user data", http.StatusInternalServerError)
+			// http.Error(w, "Failed to read user data", http.StatusInternalServerError)
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to read user data")
 			return
 		}
 		users = append(users, user)
 	}
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Users retrieved successfully",
-		"data":    users,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "Users retrieved successfully",
+	// 	"data":    users,
+	// }
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Println("JSON Encode Error:", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
+	// if err := json.NewEncoder(w).Encode(response); err != nil {
+	// 	log.Println("JSON Encode Error:", err)
+	// 	http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	// }
+	utils.SuccessResponse(w, http.StatusOK, "Users retrieved successfully", users)
 }

@@ -7,12 +7,13 @@ import (
 	"log"
 	"net/http"
 	"net/smtp"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
+
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 )
 
@@ -30,7 +31,8 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 
 	var reqBody RequestBody
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		// http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		log.Println("Invalid request body:", err)
 		return
 	}
@@ -51,13 +53,14 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 
 	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		// http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to generate token")
 		log.Println("JWT generation error:", err)
 		return
 	}
 
 	fmt.Println(signedToken)
-	//front er toekn
+	//front er toekn upore
 
 	db := database.Connect()
 
@@ -72,14 +75,16 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 		reqBody.Email,
 	)
 	if err != nil {
-		http.Error(w, "Failed to store reset token", http.StatusInternalServerError)
+		// http.Error(w, "Failed to store reset token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to store reset token")
 		log.Println("Failed to store reset token for:", reqBody.Email, "Error:", err)
 		return
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil || rowsAffected == 0 {
-		http.Error(w, "No verified user found with this email", http.StatusBadRequest)
+		// http.Error(w, "No verified user found with this email", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "No verified user found with this email")
 		log.Println("No verified user found with email:", reqBody.Email)
 		return
 	}
@@ -95,23 +100,13 @@ func PasswordResetRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("User id is", userID)
 
 	if err := sendResetToken(reqBody.Email, resetToken, signedToken); err != nil {
-		http.Error(w, "Failed to send password reset email", http.StatusInternalServerError)
+		// http.Error(w, "Failed to send password reset email", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to send password reset email")
 		log.Println("Failed to send password reset email to:", reqBody.Email, "Error:", err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Password reset email sent successfully",
-		"data":    nil,
-	}
-
-	json.NewEncoder(w).Encode(response)
-
-	log.Println("Password reset email sent successfully to:", reqBody.Email)
+	utils.SuccessResponse(w, http.StatusOK, "Password reset email sent successfully", nil)
 
 }
 

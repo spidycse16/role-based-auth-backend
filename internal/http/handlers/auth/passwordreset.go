@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,10 +33,15 @@ func PasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	var reqBody RequestBody
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		// http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		log.Println("Invalid request body:", err)
 		return
 	}
+	if len(reqBody.NewPassword) < 8 {
+	utils.ErrorResponse(w, http.StatusBadRequest, "Password must be at least 8 characters")
+	return
+}
 
 	// Parse and validate JWT token
 	claims := &Claims{}
@@ -44,19 +49,22 @@ func PasswordReset(w http.ResponseWriter, r *http.Request) {
     return []byte(jwtSecret), nil 
 })
 	if err != nil || !token.Valid {
-		http.Error(w, "Invalid or expired reset token", http.StatusBadRequest)
+		// http.Error(w, "Invalid or expired reset token", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid or expired reset token")
 		log.Println("Invalid or expired token:", err)
 		return
 	}
 
 	if claims.Purpose != "password_reset" {
-		http.Error(w, "Invalid token purpose", http.StatusBadRequest)
+		// http.Error(w, "Invalid token purpose", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid token purpose")
 		log.Println("Invalid token purpose for email:", claims.Email)
 		return
 	}
 
 	if time.Now().After(claims.ExpiresAt.Time) {
-		http.Error(w, "Token has expired", http.StatusBadRequest)
+		// http.Error(w, "Token has expired", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Token has expired")
 		log.Println("Token expired for email:", claims.Email)
 		return
 	}
@@ -69,7 +77,8 @@ func PasswordReset(w http.ResponseWriter, r *http.Request) {
 		claims.Email,
 	).Scan(&emailVerified)
 	if err != nil || !emailVerified {
-		http.Error(w, "User not found or email not verified", http.StatusBadRequest)
+		// http.Error(w, "User not found or email not verified", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "User not found or email not verified")
 		log.Println("User not found or email not verified for:", claims.Email)
 		return
 	}
@@ -77,7 +86,8 @@ func PasswordReset(w http.ResponseWriter, r *http.Request) {
 	// Hash the new password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqBody.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		// http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to hash password")
 		log.Println("Failed to hash password:", err)
 		return
 	}
@@ -89,21 +99,12 @@ func PasswordReset(w http.ResponseWriter, r *http.Request) {
 		claims.Email,
 	)
 	if err != nil {
-		http.Error(w, "Failed to update password", http.StatusInternalServerError)
+		// http.Error(w, "Failed to update password", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to update password")
 		log.Println("Failed to update password for:", claims.Email, "Error:", err)
 		return
 	}
 
-	// Respond with success
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Password reset successfully",
-		"data":    nil,
-	}
-	json.NewEncoder(w).Encode(response)
-
+	utils.SuccessResponse(w, http.StatusOK, "Password reset successfully", nil)
 	log.Println("Password reset successfully for:", claims.Email)
 }

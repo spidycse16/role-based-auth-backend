@@ -9,6 +9,7 @@ import (
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
 	"github.com/sagorsarker04/Developer-Assignment/internal/models"
+		"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 func CreateRole(w http.ResponseWriter, r *http.Request) {
@@ -73,18 +74,21 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 	userType := middleware.GetUserType(r)
 
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "You cannot access this page", http.StatusBadGateway)
+		// http.Error(w, "You cannot access this page", http.StatusBadGateway)
+		utils.ErrorResponse(w, http.StatusBadGateway, "You cannot access this page")
 		return
 	}
 	var req models.CreateRoleRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Please input Role name and description correctly", http.StatusBadRequest)
+		// http.Error(w, "Please input Role name and description correctly", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Please input Role name and description correctly")
 		return
 	}
 
 	if req.Name == "" || req.Description == "" {
-		http.Error(w, "Input fileds are empty", http.StatusBadRequest)
+		// http.Error(w, "Input fileds are empty", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Input fileds are empty")
 		return
 	}
 
@@ -95,7 +99,8 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 	query := `Insert into roles (id,name,description,created_at,updated_at) values($1,$2,$3,$4,$5)`
 	_, err = db.Exec(query, id, req.Name, req.Description, time.Now(), time.Now())
 	if err != nil {
-		http.Error(w, "Failed to execute the query vai", http.StatusBadRequest)
+		// http.Error(w, "Failed to execute the query vai", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Failed to execute the query")
 		return
 	}
 	response := map[string]interface{}{
@@ -103,8 +108,10 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 		"name":        req.Name,
 		"description": req.Description,
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // Set proper status code
-	json.NewEncoder(w).Encode(response)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK) // Set proper status code
+	// json.NewEncoder(w).Encode(response)
+
+	utils.SuccessResponse(w, http.StatusOK, "Role created successfully", response)
 
 }

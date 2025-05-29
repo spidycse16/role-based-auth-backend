@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // GetCurrentUserPermissions returns the permissions for the authenticated user
@@ -16,11 +15,12 @@ func GetCurrentUserPermissions(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 
 	if userID == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		// http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 	fmt.Fprintln(w, userID)
-	db:=database.Connect()
+	db := database.Connect()
 
 	// Fetch the user's permissions
 	query := `
@@ -34,7 +34,8 @@ func GetCurrentUserPermissions(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Query(query, userID)
 	if err != nil {
-		http.Error(w, "Failed to fetch permissions", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch permissions", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch permissions")
 		return
 	}
 	defer rows.Close()
@@ -44,7 +45,8 @@ func GetCurrentUserPermissions(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id, name, description, resource, action string
 		if err := rows.Scan(&id, &name, &description, &resource, &action); err != nil {
-			http.Error(w, "Failed to read permissions", http.StatusInternalServerError)
+			// http.Error(w, "Failed to read permissions", http.StatusInternalServerError)
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to read permissions")
 			return
 		}
 		permissions = append(permissions, map[string]interface{}{
@@ -56,16 +58,5 @@ func GetCurrentUserPermissions(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Return the permissions as JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Permissions fetched successfully",
-		"data":    permissions,
-	}
-
-	json.NewEncoder(w).Encode(response)
-
+	utils.SuccessResponse(w, http.StatusOK, "Permissions fetched successfully", permissions)
 }

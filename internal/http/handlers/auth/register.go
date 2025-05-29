@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/models"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,12 +27,14 @@ type RegisterRequest struct {
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		// http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request Payload")
 		return
 	}
 
 	if !isValidEmail(req.Email) {
-		http.Error(w, "Invalid Email foramt", http.StatusBadRequest)
+		// http.Error(w, "Invalid Email foramt", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Email format")
 		return
 	}
 
@@ -45,19 +47,22 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields
 	if req.Username == "" || req.Email == "" || req.Password == "" {
-		http.Error(w, "Username, email, and password are required", http.StatusBadRequest)
+		// http.Error(w, "Username, email, and password are required", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Username, email, and password are required")
 		return
 	}
 
 	if len(req.Password) < 8 || len(req.Password) > 20 {
-		http.Error(w, "Password should be 8 to 20 characters long", http.StatusBadRequest)
+		// http.Error(w, "Password should be 8 to 20 characters long", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Password should be 8 to 20 characters long")
 		return
 	}
 
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		// http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
 
@@ -85,10 +90,12 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the email already exists
 	if exists, err := isEmailExists(db, user.Email); err != nil {
-		http.Error(w, "Failed to check email existence", http.StatusInternalServerError)
+		// http.Error(w, "Failed to check email existence", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to check email existence")
 		return
 	} else if exists {
-		http.Error(w, "Email already exists", http.StatusBadRequest)
+		// http.Error(w, "Email already exists", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Email already exists")
 		return
 	}
 	query := `
@@ -111,7 +118,8 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	).Scan(&user.ID)
 
 	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		// http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 
@@ -129,26 +137,29 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	verificationToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		// http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to generate verification token")
 		return
 	}
 	// Send verification email
 	if err := sendVerificationEmail(req.Email, verificationToken); err != nil {
-		http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
+		// http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to send verification email")
 		return
 	}
 
 	user.PasswordHash = ""
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "User created successfully",
-		"data":    user,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "User created successfully",
+	// 	"data":    user,
+	// }
 
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "User created successfully", user)
 
 }
 

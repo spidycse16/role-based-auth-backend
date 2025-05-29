@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
 	"github.com/sagorsarker04/Developer-Assignment/internal/models"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // UpdateRole updates the details of a specific role
@@ -19,7 +19,8 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) {
 
 	// Allow only Admin and SystemAdmin
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
@@ -30,18 +31,20 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) {
 	// Parse the request body
 	var req models.RoleUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		// http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request Payload")
 		return
 	}
 
 	// Validate required fields
 	if req.Name == "" {
-		http.Error(w, "Role name is required", http.StatusBadRequest)
+		// http.Error(w, "Role name is required", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Role name is required")
 		return
 	}
 
 	// Connect to the database
-	db:=database.Connect()
+	db := database.Connect()
 
 	// Update the role in the database
 	query := `
@@ -67,23 +70,26 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err == sql.ErrNoRows {
-		http.Error(w, "Role not found", http.StatusNotFound)
+		// http.Error(w, "Role not found", http.StatusNotFound)
+		utils.ErrorResponse(w, http.StatusNotFound, "Role not found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to update role", http.StatusInternalServerError)
+		// http.Error(w, "Failed to update role", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to update role")
 		return
 	}
 
 	// Return the updated role as JSON
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Role updated successfully",
-		"data":    updatedRole,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "Role updated successfully",
+	// 	"data":    updatedRole,
+	// }
 
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "Role updated successfully", updatedRole)
 
 }

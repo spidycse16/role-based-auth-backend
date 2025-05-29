@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // DeleteRole deletes a specific role
@@ -18,7 +17,8 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 
 	// Allow only Admin and SystemAdmin
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
@@ -27,7 +27,7 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 	roleID := vars["role_id"]
 
 	// Connect to the database
-	db:=database.Connect()
+	db := database.Connect()
 
 	// Delete the role from the database
 	query := "DELETE FROM roles WHERE id = $1 RETURNING id"
@@ -35,23 +35,18 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 	err := db.QueryRow(query, roleID).Scan(&deletedRoleID)
 
 	if err == sql.ErrNoRows {
-		http.Error(w, "Role not found", http.StatusNotFound)
+		// http.Error(w, "Role not found", http.StatusNotFound)
+		utils.ErrorResponse(w, http.StatusNotFound, "Role not found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to delete role", http.StatusInternalServerError)
+		// http.Error(w, "Failed to delete role", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to delete role")
 		return
 	}
 
 	// Return a success message
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Role deleted successfully",
-		"data":    nil,
-	}
-
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "Role deleted successfully", nil)
 
 }

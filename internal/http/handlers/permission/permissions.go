@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 )
 
 // ListAllPermissions lists all the permissions (Admin+)
@@ -18,17 +17,19 @@ func ListAllPermissions(w http.ResponseWriter, r *http.Request) {
 
 	// Allow only Admin and SystemAdmin
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
 	// Connect to the database
-	db:=database.Connect()
+	db := database.Connect()
 
 	// Fetch all permissions
 	rows, err := db.Query("SELECT id, name, description, resource, action, created_at, updated_at FROM permissions ORDER BY created_at ASC")
 	if err != nil {
-		http.Error(w, "Failed to fetch permissions", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch permissions", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch permissions")
 		return
 	}
 	defer rows.Close()
@@ -41,7 +42,8 @@ func ListAllPermissions(w http.ResponseWriter, r *http.Request) {
 
 		err := rows.Scan(&id, &name, &description, &resource, &action, &createdAt, &updatedAt)
 		if err != nil {
-			http.Error(w, "Failed to read permissions", http.StatusInternalServerError)
+			// http.Error(w, "Failed to read permissions", http.StatusInternalServerError)
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to read permissions")
 			return
 		}
 
@@ -59,13 +61,14 @@ func ListAllPermissions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Permissions retrieved successfully",
-		"data":    permissions,
-	}
+	// response := map[string]interface{}{
+	// 	"status":  strconv.Itoa(http.StatusOK),
+	// 	"message": "Permissions retrieved successfully",
+	// 	"data":    permissions,
+	// }
 
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "Permissions retrieved successfully", permissions)
 
 }
 
@@ -75,7 +78,8 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 
 	// Allow only Admin and SystemAdmin
 	if userType != "admin" && userType != "system_admin" {
-		http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		// http.Error(w, "No permission to access this resource", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "No permission to access this resource")
 		return
 	}
 
@@ -84,7 +88,7 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 	permissionID := vars["permission_id"]
 
 	// Connect to the database
-	db:=database.Connect()
+	db := database.Connect()
 
 	// Fetch the permission details
 	var id, name, description, resource, action, createdAt, updatedAt string
@@ -95,10 +99,12 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 	`
 	err := db.QueryRow(query, permissionID).Scan(&id, &name, &description, &resource, &action, &createdAt, &updatedAt)
 	if err == sql.ErrNoRows {
-		http.Error(w, "Permission not found", http.StatusNotFound)
+		// http.Error(w, "Permission not found", http.StatusNotFound)
+		utils.ErrorResponse(w, http.StatusNotFound, "Permission not found")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to fetch permission details", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch permission details", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch permission details")
 		return
 	}
 
@@ -113,15 +119,7 @@ func GetPermissionDetails(w http.ResponseWriter, r *http.Request) {
 		"updated_at":  updatedAt,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	response := map[string]interface{}{
-		"status":  strconv.Itoa(http.StatusOK),
-		"message": "Permission details retrieved successfully",
-		"data":    permission,
-	}
-
-	json.NewEncoder(w).Encode(response)
+	// json.NewEncoder(w).Encode(response)
+	utils.SuccessResponse(w, http.StatusOK, "Permission details retrieved successfully", permission)
 
 }

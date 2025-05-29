@@ -9,6 +9,7 @@ import (
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/config"
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
+	"github.com/sagorsarker04/Developer-Assignment/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,7 +35,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	// Parse the JSON request body
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		// http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid request Payload")
 		return
 	}
 
@@ -44,7 +46,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields
 	if req.Email == "" || req.Password == "" {
-		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		// http.Error(w, "Email and password are required", http.StatusBadRequest)
+		utils.ErrorResponse(w, http.StatusBadRequest, "Email and password are required")
 		return
 	}
 
@@ -60,29 +63,34 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	query := "SELECT id, username, user_type, password_hash, email_verified FROM users WHERE email = $1"
 	err := db.QueryRow(query, req.Email).Scan(&userID, &username, &userType, &storedHash, &emailVerified)
 	if err == sql.ErrNoRows {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		// http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid email or password")
 		return
 	} else if err != nil {
-		http.Error(w, "Failed to fetch user", http.StatusInternalServerError)
+		// http.Error(w, "Failed to fetch user", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch user")
 		return
 	}
 
 	// Check if the email is verified
 	if !emailVerified {
-		http.Error(w, "Email not verified", http.StatusForbidden)
+		// http.Error(w, "Email not verified", http.StatusForbidden)
+		utils.ErrorResponse(w, http.StatusForbidden, "Email not verified")
 		return
 	}
 
 	// Compare passwords
 	if err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(req.Password)); err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		// http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid email or password")
 		return
 	}
 
 	// Generate JWT token
 	token, err := generateJWT(userID, username, userType, cfg.JWT.Secret, cfg.JWT.Expiry)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		// http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to generate token")
 		return
 	}
 	expiresAt := time.Now().Add(24 * time.Hour)
