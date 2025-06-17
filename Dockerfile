@@ -1,25 +1,19 @@
-FROM golang:1.20-alpine AS builder
+FROM golang:1.23.0-alpine
 
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-
-RUN go mod download
-
+# Copy the current directory contents into the container at /app
 COPY . .
+RUN go mod tidy
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
-
-FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates tzdata
-
-WORKDIR /root/
-
-COPY --from=builder /app/main .
-COPY --from=builder /app/.env.example .env
-
+COPY .env .env
+# Expose port 8080
 EXPOSE 8080
 
-CMD ["./main"]
+#uncommnet this line and comment CMD["go", "run" , "cmd/migration/main.go"] for running migration for first time
+# CMD ["go", "run", "cmd/migration/main.go"]
+
+#after the migration is done always run this line
+
+CMD ["go","run","cmd/main.go"]

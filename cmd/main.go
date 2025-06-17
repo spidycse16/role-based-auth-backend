@@ -1,23 +1,43 @@
 package main
 
 import (
-    "log"
-    "os"
+	"fmt"
+	"log"
+	"net/http"
 
-    "github.com/sagorsarker04/Developer-Assignment/internal/database"
-    "github.com/joho/godotenv"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/sagorsarker04/Developer-Assignment/internal/config"
+	"github.com/sagorsarker04/Developer-Assignment/internal/http/routes"
 )
 
 func main() {
-    // Load environment variables
-    err := godotenv.Load(".env")
-    if err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
-    }
+	router := mux.NewRouter()
 
-    // Connect to the database
-    database.Connect()
-    defer database.Close()
+	routes.SetupRoutes(router)
 
-    log.Println("App is running on port", os.Getenv("SERVER_PORT"))
+	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173"})
+
+	allowedMethods := handlers.AllowedMethods([]string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodOptions,
+	})
+
+	allowedHeaders := handlers.AllowedHeaders([]string{
+		"Content-Type",
+		"Authorization",
+		"Cookie",
+	})
+
+	allowedCredentials := handlers.AllowCredentials()
+	cfg := config.GetConfig()
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	fmt.Printf("Address of cfg: %p\n", cfg)
+	log.Printf("Server running on http://localhost%s", addr)
+	log.Fatal(http.ListenAndServe(addr,
+		handlers.CORS(allowedOrigins, allowedMethods, allowedHeaders, allowedCredentials)(router),
+	))
 }

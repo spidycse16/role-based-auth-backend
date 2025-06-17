@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     email_verified BOOLEAN DEFAULT FALSE,
     user_type VARCHAR(20) NOT NULL,
     verification_token VARCHAR(100),
+    reset_token VARCHAR(100),
     token_expiry TIMESTAMP,
     deletion_requested BOOLEAN DEFAULT FALSE,
     active BOOLEAN DEFAULT TRUE,
@@ -107,7 +108,8 @@ WHERE name IN (
     'user:read:all', 
     'user:read:self', 
     'user:update:self', 
-    'user:delete:self'
+    'user:delete:self',
+    'user:delete:all'
 );
 
 -- User permissions
