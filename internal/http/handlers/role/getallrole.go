@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/sagorsarker04/Developer-Assignment/internal/database"
 	"github.com/sagorsarker04/Developer-Assignment/internal/http/middleware"
@@ -49,16 +51,16 @@ func GetAllRole(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Return the roles as JSON
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
+	//Return the roles as JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
-	// response := map[string]interface{}{
-	// 	"status":  strconv.Itoa(http.StatusOK),
-	// 	"message": "Roles retrieved successfully",
-	// 	"data":    roles,
-	// }
+	response := map[string]interface{}{
+		"status":  strconv.Itoa(http.StatusOK),
+		"message": "Roles retrieved successfully",
+		"data":    roles,
+	}
 
-	// json.NewEncoder(w).Encode(response)
-	utils.SuccessResponse(w, http.StatusOK, "Roles retrieved successfully", roles)
+	json.NewEncoder(w).Encode(response)
+	// utils.SuccessResponse(w, http.StatusOK, "Roles retrieved successfully", roles)
 }

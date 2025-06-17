@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -33,7 +34,16 @@ func PromoteToModerator(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorResponse(w, http.StatusInternalServerError, "Failed to fetch moderator role")
 		return
 	}
+	var currentRole string
+	db.QueryRow("SELECT user_type FROM users WHERE id = $1", userID).Scan(&currentRole)
+	fmt.Println(currentRole)
 
+	//user chara kaoke moderator korte parbona
+	if currentRole!="user"{
+		// http.Error(w, "User not found", http.StatusNotFound)
+		utils.ErrorResponse(w, http.StatusNotFound, "Admins cannot be promoted to Moderator!")
+		return
+	}
 	// Update the user's main role in the users table
 	_, err = db.Exec("UPDATE users SET user_type = 'moderator', updated_at = NOW() WHERE id = $1", userID)
 	if err != nil {
